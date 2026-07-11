@@ -65,7 +65,7 @@
 /* 2. 设置卡片的基础样式（改为纯色背景） */
 .article-nav-link-wrap {
     /* 这里换成了深灰色的纯色背景，契合暗黑主题 */
-    background-color: #2b2b2b !important; 
+    background-color: #323439 !important; 
     border-radius: 10px;          /* 给背景也加上圆角，与边框圆角保持一致 */
     position: relative;
     z-index: 1;
