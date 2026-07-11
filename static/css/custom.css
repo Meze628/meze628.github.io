@@ -55,18 +55,22 @@
 }
 
 /* 1. 隐藏原主题的背景图片和遮罩 */
-.article-nav-link-wrap .article-nav-bg, /* 隐藏背景图 */
-.article-nav-link-wrap::before {        /* 隐藏原本的黑色半透明遮罩 */
+.article-nav-link-wrap picture,
+.article-nav-link-wrap img,
+.article-nav-link-wrap .article-nav-bg,
+.article-nav-link-wrap::before {
     display: none !important;
 }
 
-/* 2. 重置卡片的基础样式 */
+/* 2. 设置卡片的基础样式（改为纯色背景） */
 .article-nav-link-wrap {
-    background: transparent !important;
+    /* 这里换成了深灰色的纯色背景，契合暗黑主题 */
+    background-color: #2b2b2b !important; 
+    border-radius: 10px;          /* 给背景也加上圆角，与边框圆角保持一致 */
     position: relative;
     z-index: 1;
-    overflow: visible !important; /* 允许边框显示 */
-    box-shadow: none !important;  /* 去除原来的阴影 */
+    overflow: visible !important;
+    box-shadow: none !important; 
     transition: transform 0.3s ease;
 }
 
@@ -75,22 +79,22 @@
     transform: translateY(-2px);
 }
 
-/* 3. 核心：利用伪元素和遮罩实现透明渐变边框 */
+/* 3. 保留之前的渐变边框 */
 .article-nav-link-wrap::after {
     content: "";
     position: absolute;
-    inset: 0;                 /* 让边框充满整个卡片 */
-    border-radius: 10px;      /* 这里控制边框的圆角大小 */
-    padding: 2px;             /* 这里控制边框的粗细（目前是 2px） */
+    inset: 0;                 
+    border-radius: 10px;      /* 边框的圆角大小 */
+    padding: 2px;             /* 边框的粗细 */
     
-    /* 这里的 linear-gradient 是渐变颜色，目前为你调配了契合你博客红黑主题的“暗夜红”渐变 */
+    /* 渐变色：暗夜红 */
     background: linear-gradient(135deg, #ff4b2b, #ff416c, #8a2387); 
     
-    /* CSS 遮罩魔法：掏盖内部，只保留 padding 区域的颜色 */
+    /* CSS 遮罩魔法 */
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     
     z-index: -1;
-    pointer-events: none;     /* 防止边框层阻挡鼠标点击事件 */
+    pointer-events: none;     
 }
