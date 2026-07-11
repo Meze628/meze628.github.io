@@ -4,6 +4,7 @@ description: 友情链接
 
 date: 2026-07-11T20:12:52+08:00
 lastmod: 2026-07-11T20:12:52+08:00
+math: true
 ---
 
 在线 $\LaTeX$ 公式编辑器： 
