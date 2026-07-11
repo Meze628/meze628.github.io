@@ -1,0 +1,55 @@
+/* =========================================================
+   Reimu 主题：强制移除首页文章头图并重排文本
+   ========================================================= */
+
+/* 1. 强行隐藏所有文章卡片中的封面图容器 */
+.post-wrapper .post-cover,
+.post-card-image,
+.post-item .cover,
+.post-wrap .post-cover {
+    display: none !important;
+}
+
+/* 2. 重置外层包裹容器的响应式排版（打破原有的左右 flex 布局） */
+.post-wrap, 
+.post-wrapper,
+.post-item {
+    display: block !important;
+    height: auto !important;
+    min-height: auto !important;
+}
+
+/* 3. 释放文本容器宽度，使其占据 100% */
+.post-info,
+.post-card-content,
+.post-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: none !important;
+    padding: 30px !important;
+    box-sizing: border-box !important;
+}
+
+/* 4. 强制标题靠左对齐，并保持底部间距 */
+.post-title,
+.post-card-title {
+    text-align: left !important;
+    justify-content: flex-start !important;
+    margin-bottom: 15px !important;
+}
+
+/* 5. 确保描述文字（简介）正常在标题下方显示，靠左对齐 */
+.post-article,
+.post-excerpt,
+.post-card-summary,
+.article-summary {
+    text-align: left !important;
+    display: block !important; /* 解除可能存在的 flex 截断限制 */
+    width: 100% !important;
+}
+
+/* 6. 处理可能存在的 Meta 数据（日期、标签等）对齐 */
+.post-meta {
+    justify-content: flex-start !important;
+    text-align: left !important;
+}

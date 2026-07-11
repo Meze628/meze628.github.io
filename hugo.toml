@@ -22,3 +22,6 @@ baseName = "algolia"
 isPlainText = true
 mediaType = "application/json"
 notAlternative = true
+
+[params.injector]
+  head_end = '<link rel="stylesheet" href="/css/custom.css">'
