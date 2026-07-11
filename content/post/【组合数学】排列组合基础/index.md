@@ -4,8 +4,7 @@ description: "计数原理、排列组合、插板法、不相邻的排列、二
 date: 2026-02-13T13:20:00+08:00
 math: true
 categories:
-    - OI与数学
-    - 笔记
+    - 组合数学笔记
 tags:
     - 组合数学
 ---

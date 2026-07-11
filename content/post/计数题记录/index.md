@@ -4,8 +4,7 @@ description: "计数题记录"
 date: 2026-02-27T14:18:15+08:00
 math: true
 categories:
-    - OI与数学
-    - 记录
+    - 记录（OI与数学）
 tags:
     - 组合数学
 ---

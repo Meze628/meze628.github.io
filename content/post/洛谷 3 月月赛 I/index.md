@@ -4,8 +4,7 @@ description: "洛谷 3 月月赛 I 记录"
 date: 2026-03-01T17:51:34+08:00
 math: true
 categories:
-    - OI与数学
-    - 记录
+    - 记录（OI与数学）
 tags:
     - 题解
 ---

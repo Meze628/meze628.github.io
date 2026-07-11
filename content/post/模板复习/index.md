@@ -4,8 +4,7 @@ description: "模板复习"
 date: 2026-03-03T17:06:21+08:00
 math: true
 categories:
-    - OI与数学
-    - 记录
+    - 记录（OI与数学）
 ---
 
 ## 图论
