@@ -2,28 +2,21 @@
 title: 友情链接
 description: 友情链接
 
-date: 2022-06-09T20:12:52+08:00
-lastmod: 2022-06-09T20:12:52+08:00
+date: 2026-7-11T20:12:52+08:00
+lastmod: 2026-7-11T20:12:52+08:00
 ---
 
-## 本站信息
+在线 $\LaTeX$ 公式编辑器： 
+- [https://www.latexlive.com/](https://www.latexlive.com/)    
 
-- 站名： 拔剑Sketon
-- 站长： 拔剑Sketon
+在线 Markdown 编辑器：   
+- [https://www.toolhelper.cn/Code/Markdown](https://www.toolhelper.cn/Code/Markdown)    
+- [https://toolonline.net/markdown](https://toolonline.net/markdown)
+- [https://www.zybuluo.com/mdeditor#](https://www.zybuluo.com/mdeditor#)
+    
+OIerDb：[https://oier.baoshuo.dev/](https://oier.baoshuo.dev/)       
+在线数学工具：
+- [https://zh.numberempire.com/](https://zh.numberempire.com/)   
+- [https://www.wolframalpha.com/](https://www.wolframalpha.com/)      
 
-## 申请方法
-
-- 添加本站后，在本页留言，格式如下
-
-````yml
-```yml
-- name: #您的名字
-  url: #您的网址
-  desc: #简短描述
-  image: #一张图片
-```
-````
-
-## 小伙伴们
-
-{{< friendsLink >}}
+OI-Wiki：[https://oi-wiki.org/](https://oi-wiki.org/)
