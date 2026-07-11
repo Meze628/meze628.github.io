@@ -3,7 +3,7 @@ languageCode = 'en'
 title = "Meze's Blog"
 theme = 'hugo-theme-reimu'
 
-defaultContentLanguage = 'zh-cn'
+defaultContentLanguage = 'zh-CN'
 
 [markup.goldmark.extensions.passthrough]
 enable = true
