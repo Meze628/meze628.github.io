@@ -53,3 +53,44 @@
     justify-content: flex-start !important;
     text-align: left !important;
 }
+
+/* 1. 隐藏原主题的背景图片和遮罩 */
+.article-nav-link-wrap .article-nav-bg, /* 隐藏背景图 */
+.article-nav-link-wrap::before {        /* 隐藏原本的黑色半透明遮罩 */
+    display: none !important;
+}
+
+/* 2. 重置卡片的基础样式 */
+.article-nav-link-wrap {
+    background: transparent !important;
+    position: relative;
+    z-index: 1;
+    overflow: visible !important; /* 允许边框显示 */
+    box-shadow: none !important;  /* 去除原来的阴影 */
+    transition: transform 0.3s ease;
+}
+
+/* 悬浮时稍微放大卡片，增加交互感 */
+.article-nav-link-wrap:hover {
+    transform: translateY(-2px);
+}
+
+/* 3. 核心：利用伪元素和遮罩实现透明渐变边框 */
+.article-nav-link-wrap::after {
+    content: "";
+    position: absolute;
+    inset: 0;                 /* 让边框充满整个卡片 */
+    border-radius: 10px;      /* 这里控制边框的圆角大小 */
+    padding: 2px;             /* 这里控制边框的粗细（目前是 2px） */
+    
+    /* 这里的 linear-gradient 是渐变颜色，目前为你调配了契合你博客红黑主题的“暗夜红”渐变 */
+    background: linear-gradient(135deg, #ff4b2b, #ff416c, #8a2387); 
+    
+    /* CSS 遮罩魔法：掏盖内部，只保留 padding 区域的颜色 */
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    
+    z-index: -1;
+    pointer-events: none;     /* 防止边框层阻挡鼠标点击事件 */
+}
