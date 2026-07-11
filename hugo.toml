@@ -1,6 +1,6 @@
 baseURL = 'https://meze628.github.io/'
 languageCode = 'en'
-title = 'Meze's Blog'
+title = "Meze's Blog"
 theme = 'hugo-theme-reimu'
 
 defaultContentLanguage = 'en'
