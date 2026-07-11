@@ -1,5 +1,5 @@
 baseURL = 'https://meze628.github.io/'
-languageCode = 'en'
+languageCode = 'zh-cn'
 title = "Meze's Blog"
 theme = 'hugo-theme-reimu'
 
