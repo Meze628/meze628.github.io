@@ -54,47 +54,28 @@
     text-align: left !important;
 }
 
-/* 1. 隐藏原主题的背景图片和遮罩 */
+/* 1. 彻底隐藏原主题的背景图片、遮罩，以及我们之前加的伪元素边框 */
 .article-nav-link-wrap picture,
 .article-nav-link-wrap img,
 .article-nav-link-wrap .article-nav-bg,
-.article-nav-link-wrap::before {
+.article-nav-link-wrap::before,
+.article-nav-link-wrap::after {
     display: none !important;
 }
 
-/* 2. 设置卡片的基础样式（改为纯色背景） */
+/* 2. 极简纯色卡片样式 */
 .article-nav-link-wrap {
-    /* 这里换成了深灰色的纯色背景，契合暗黑主题 */
-    background-color: #323439 !important; 
-    border-radius: 10px;          /* 给背景也加上圆角，与边框圆角保持一致 */
+    background-color: #323439 !important; /* 你的文章同款背景色 */
+    border-radius: 10px;                  /* 圆角大小 */
+    border: none !important;              /* 强制去除任何默认边框 */
+    outline: none !important;             /* 强制去除外轮廓线 */
     position: relative;
     z-index: 1;
-    overflow: visible !important;
-    box-shadow: none !important; 
+    box-shadow: none !important;          /* 去除阴影，保持扁平化 */
     transition: transform 0.3s ease;
 }
 
-/* 悬浮时稍微放大卡片，增加交互感 */
+/* 3. 悬浮动效：鼠标放上去时稍微上浮 */
 .article-nav-link-wrap:hover {
     transform: translateY(-2px);
-}
-
-/* 3. 保留之前的渐变边框 */
-.article-nav-link-wrap::after {
-    content: "";
-    position: absolute;
-    inset: 0;                 
-    border-radius: 10px;      /* 边框的圆角大小 */
-    padding: 2px;             /* 边框的粗细 */
-    
-    /* 渐变色：暗夜红 */
-    background: linear-gradient(135deg, #ff4b2b, #ff416c, #8a2387); 
-    
-    /* CSS 遮罩魔法 */
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    
-    z-index: -1;
-    pointer-events: none;     
 }
