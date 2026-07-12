@@ -528,8 +528,8 @@ animation:
 
 # see https://github.com/D-Sketon/mouse-firework
 firework:
-  enable: true
-  disable_on_mobile: false
+  enable: false
+  disable_on_mobile: true
   options:
     excludeElements: ["a", "button"]
     particles:
@@ -654,7 +654,7 @@ injector:
 
 # Experimental, may have a lot of bugs, open with caution!
 pjax:
-  enable: truncated
+  enable: false
 
 # Experimental
 # https://github.com/GoogleChromeLabs/quicklink
@@ -695,7 +695,7 @@ player:
   # if you enable meting, you must enable aplayer first
   aplayer:
     # https://github.com/DIYgod/APlayer
-    enable: true
+    enable: false
     options:
       audio: []
       # fixed: true
@@ -710,7 +710,7 @@ player:
   meting:
     # https://github.com/metowolf/MetingJS
     # if you want to use meting, please enable aplayer first
-    enable: true
+    enable: false
     meting_api: # custom api
     options:
       id: 2265921590
