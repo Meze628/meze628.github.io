@@ -654,7 +654,7 @@ injector:
 
 # Experimental, may have a lot of bugs, open with caution!
 pjax:
-  enable: false
+  enable: truncated
 
 # Experimental
 # https://github.com/GoogleChromeLabs/quicklink
@@ -691,26 +691,26 @@ pace:
 # Please turn on pjax to use this feature
 player:
   disable_on_mobile: false
-  position: before_sidebar # before_sidebar | after_sidebar | after_widget
+  position: after_sidebar # before_sidebar | after_sidebar | after_widget
   # if you enable meting, you must enable aplayer first
   aplayer:
     # https://github.com/DIYgod/APlayer
-    enable: false
+    enable: true
     options:
       audio: []
-      fixed: true
-      autoplay:
-      loop:
-      order:
-      preload:
-      volume:
-      mutex:
-      listFolded:
-      lrcType:
+      # fixed: true
+      autoplay:false
+      loop:all
+      order:random
+      preload:auto
+      volume:0.7
+      mutex:true
+      listFolded:false
+      lrcType:0
   meting:
     # https://github.com/metowolf/MetingJS
     # if you want to use meting, please enable aplayer first
-    enable: false
+    enable: true
     meting_api: # custom api
     options:
       id: 2265921590
