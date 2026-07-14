@@ -25,14 +25,9 @@ $$
 
 $$
 \begin{aligned}
-
 \text{cnt}_x &= \sum_{\emptyset \ne S \subseteq \left \{ 1,2,\cdots,m \right \}} (-1)^{|S|-1} \cdot 1 \\
-
-
 &=\sum_{i=1}^{m} (-1)^{i-1} \binom{m}{i}  \\
-
 &=1
-
 \end{aligned}
 $$
 
@@ -104,17 +99,11 @@ $$
 $$
 \begin{aligned}
 \sum_{T \subseteq S}(-1)^{|S|-|T|}f(T) &=\sum_{T \subseteq S}(-1)^{|S|-|T|} \sum_{Q \subseteq T} g(Q) \\
-
 &= \sum_{Q \subseteq S} g(Q) \sum_{Q \subseteq T \subseteq S }(-1)^{|S|-|T|}  \\
-
 &= \sum_{Q \subseteq S} g(Q) \sum_{T \subseteq (S \setminus Q)}(-1)^{|(S \setminus Q)|-|T|}  \\
-
 &= \sum_{Q \subseteq S} g(Q) \sum_{i=0}^{|S \setminus Q|} \binom{|S \setminus Q|}{i}(-1)^i \\
-
 &= \sum_{Q \subseteq S} g(Q) \cdot [|S \setminus Q|=0] \\
-
 &=g(S)
-
 \end{aligned}
 $$
 
