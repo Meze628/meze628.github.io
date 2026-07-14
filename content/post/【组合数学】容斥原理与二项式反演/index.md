@@ -62,10 +62,6 @@ $$
 
 若干 $\overline{A_i}$ 的交集表示满足若干个 $x_i \ge a_i+1$ 的所有解，利用插板法解决
 
-$$
-=\sum_{T \subseteq \left \{ 1,2, \cdots , m \right \}} (-1)^{|T|} \binom{n-\sum_{k \in T}(a_k+1)+m-1}{m-1}
-$$
-
 ### [[HAOI2008] 硬币购物](https://www.luogu.com.cn/problem/P1450)
 可以用多重背包来写，但是时间复杂度会超。题目本质是求 $0 \le x_i \le d_i$ 的如下方程的解的个数
 $$
