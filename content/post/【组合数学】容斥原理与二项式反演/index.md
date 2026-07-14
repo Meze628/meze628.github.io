@@ -153,7 +153,7 @@ g(x) &= \sum_{i=0}^{x}(-1)^{x-i}\binom{x}{i}f(i) \\
 $$
 代入 $x=c$ 得到答案
 $$
-Ans=\sum_{i=0}^{c}\sum_{j=0}^{m}(-1)^{c-i+j}\binom{c}{i} \binom{m}{j} [(i+1)^{m-j}-1]^n
+\text{Ans}=\sum_{i=0}^{c}\sum_{j=0}^{m}(-1)^{c-i+j}\binom{c}{i} \binom{m}{j} [(i+1)^{m-j}-1]^n
 $$
 
 ## 二项式反演形式二（超集反演推论）
