@@ -1,6 +1,6 @@
 ---
 title: "【组合数学】容斥原理与二项式反演"
-description: "容斥原理、子集反演、超集反演与二项式反演、"
+description: "容斥原理、子集反演、超集反演与二项式反演"
 date: 2026-07-14T20:43:00+08:00
 math: true
 categories:
