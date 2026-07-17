@@ -52,6 +52,11 @@ $$
 f \circ g=f(g(x))=\sum_{i=0}^{\infty} a_ig^i(x)
 $$
 
+复合运算同样满足结合律
+
+$$
+(f \circ g) \circ h= f \circ (g \circ h)
+$$
 
 ## 泰勒展开
 
