@@ -73,9 +73,7 @@ f^{(n)}(x) &= n!c_n+(n+1)!c_{n+1}(x-x_0)+ \cdots
 $$
 将 $x=x_0$ 代入得到
 $$
-f^{(n)}(x_0)=n!c_n
-$$
-$$
+f^{(n)}(x_0)=n!c_n \\
 \Longrightarrow c_n=\frac{f^{(n)}(x_0)}{n!}
 $$
 于是即可得到 $f(x)$ 的泰勒展开
@@ -123,6 +121,22 @@ $$
 \end{aligned}
 $$
 
+### 一般形式对应的生成函数
+
+$$
+\begin{aligned}
+(a+bx)^{\alpha} &= a^{\alpha}(1+\frac{b}{a}x)^{\alpha} \\
+&= a^{\alpha}\sum_{n=0}^{\infty}\binom{\alpha}{n}\left ( \frac{b}{a} \right )^nx^n \\
+&= \sum_{n=0}^{\infty}\binom{\alpha}{n} a^{\alpha-n}b^n x^n \\
+\end{aligned}
+$$
+
+即
+
+$$
+[x^n](a+bx)^{\alpha}=\binom{\alpha}{n}a^{\alpha-n}b^n
+$$
+
 
 ### 负指数的意义
 当 $n$ 正整数时
@@ -140,7 +154,7 @@ $$
 
 ### 分数指数的意义
 
-参考后文
+参考[后文](https://meze0.top/post/%E7%BB%84%E5%90%88%E6%95%B0%E5%AD%A6%E7%94%9F%E6%88%90%E5%87%BD%E6%95%B0/#%e5%8d%a1%e7%89%b9%e5%85%b0%e6%95%b0%e7%9a%84%e7%94%9f%e6%88%90%e5%87%bd%e6%95%b0)
 
 ## 普通生成函数（OGF）
 
@@ -167,10 +181,7 @@ $$
 > 序列 $\langle 0,1,1,1,1 \cdots \rangle$ 的形式幂级数和封闭形式
 
 $$
-f(x)x+x=f(x)
-$$
-
-$$
+f(x)x+x=f(x) \\
 \Longrightarrow f(x)=\frac{x}{1-x}
 $$
 
@@ -178,10 +189,7 @@ $$
 > 序列 $\langle 1,0,1,0,1 \cdots \rangle$ 的形式幂级数和封闭形式
 
 $$
-f(x)x^2+1=f(x)
-$$
-
-$$
+f(x)x^2+1=f(x) \\
 \Longrightarrow f(x)=\frac{1}{1-x^2}
 $$
 
@@ -224,11 +232,9 @@ $$
 
 ### 斐波那契数列的生成函数
 
-斐波那契数列定义为 $a_0=0,a_1=1,a_n=a_{n-1}+a_{n-2}(n>1)$ 的数列，关于他的生成函数可以得到如下方程
+斐波那契数列定义为 $a_0=0,a_1=1,a_n=a_{n-1}+a_{n-2} \quad (n>1)$ 的数列，关于他的生成函数可以得到如下方程
 $$
-f(x)=xf(x)+x^2f(x)+x
-$$
-$$
+f(x)=xf(x)+x^2f(x)+x \\
 \Longrightarrow  f(x)=\frac{x}{1-x-x^2}
 $$
 把它变成形式幂级数的形式，有两种方式
@@ -263,6 +269,119 @@ $$
 a_n=\frac{1}{\sqrt{5}} \left[ \left(\frac{1+\sqrt{5}}{2}\right)^n - \left(\frac{1-\sqrt{5}}{2}\right)^n \right]
 $$
 
-这个方式通用性强，对于 $\frac{f(x)}{g(x)}$ 求解生成函数可采用上面那个方法
+这个方式通用性强，对于 $\frac{f(x)}{g(x)}$ 求解生成函数可采用上面这个方法
 
 ### 卡特兰数的生成函数
+
+卡特兰数的递推关系如下
+$$
+C_0=1 \\
+C_n=\sum_{i=0}^{n-1} C_i C_{n-1-i} \quad (n \ge 1)
+$$
+
+其生成函数
+
+
+$$
+\begin{aligned}
+f(x) &= \sum_{n=0}^{\infty}C_nx^n  \\
+&=1+ \sum_{n=1}^{\infty} \left ( \sum_{i=0}^{n-1}C_iC_{n-i-1} \right ) x^n  \\
+&=1+ x\sum_{n=1}^{\infty} \left ( \sum_{i=0}^{n-1}C_iC_{n-i-1} \right ) x^{n-1}  \\
+&=1+ xf^2(x)\\
+\end{aligned} \\
+$$
+于是我们得到了关于它的生成函数的方程
+$$
+xf^2(x)-f(x)+1=0 \\
+\Longrightarrow f(x)=\frac{1 \pm \sqrt{1-4x}}{2x}
+$$
+因为 $\lim_{x \to 0} f(x) = C_0 = 1$ 必须满足，因此分子只能区减号
+
+$$
+f(x)=\frac{1-\sqrt{1-4x}}{2x} 
+$$
+考虑对 $\sqrt{1-4x}$ 进行广义二项式展开
+$$
+\begin{aligned} (1-4x)^{\frac{1}{2}} &= \sum_{k=0}^{\infty} \binom{\frac{1}{2}}{k} (-4x)^k \\ 
+&= 1 + \sum_{k=1}^{\infty} \frac{\frac{1}{2} \cdot \left(-\frac{1}{2}\right) \cdot \left(-\frac{3}{2}\right) \cdots \left(\frac{1}{2} - k + 1\right)}{k!} (-1)^k 2^{2k} x^k \\ 
+&= 1 + \sum_{k=1}^{\infty} \frac{(-1)^{k-1} \cdot 1 \cdot 3 \cdot 5 \cdots (2k-3)}{2^k \cdot k!} (-1)^k 2^{2k} x^k \\ 
+&= 1 + \sum_{k=1}^{\infty} \frac{(-1)^{k-1} \cdot (2k-2)!}{2^k \cdot k! \cdot [2 \cdot 4 \cdot 6 \cdots (2k-2)]} (-1)^k 2^{2k} x^k \\ 
+&= 1 + \sum_{k=1}^{\infty} \frac{(-1)^{k-1} \cdot (2k-2)!}{2^k \cdot k! \cdot 2^{k-1} \cdot (k-1)!} (-1)^k 2^{2k} x^k \\ 
+&= 1 + \sum_{k=1}^{\infty} \frac{(-1)^{k-1}}{2^{2k-1} \cdot k} \cdot \frac{(2k-2)!}{(k-1)!(k-1)!} (-1)^k 2^{2k} x^k \\ 
+&= 1 + \sum_{k=1}^{\infty} \frac{(-1)^{k-1}}{2^{2k-1} \cdot k} \binom{2k-2}{k-1} (-1)^k 2^{2k} x^k \\ 
+&= 1 + \sum_{k=1}^{\infty} \frac{(-1)^{2k-1} \cdot 2^{2k}}{2^{2k-1} \cdot k} \binom{2k-2}{k-1} x^k \\ 
+&= 1 - 2 \sum_{k=1}^{\infty} \frac{1}{k} \binom{2k-2}{k-1} x^k 
+\end{aligned}
+$$
+
+代入原式得到
+
+$$
+\begin{aligned} 
+f(x) &= \frac{1 - \left( 1 - 2 \sum_{k=1}^{\infty} \frac{1}{k} \binom{2k-2}{k-1} x^k \right)}{2x} \\ 
+&= \frac{2 \sum_{k=1}^{\infty} \frac{1}{k} \binom{2k-2}{k-1} x^k}{2x} \\ 
+&= \sum_{k=1}^{\infty} \frac{1}{k} \binom{2k-2}{k-1} x^{k-1}  \\
+&= \sum_{n=0}^{\infty} \frac{1}{n+1} \binom{2n}{n} x^n
+\end{aligned}
+$$
+
+于是得到 
+$$
+C_n= \frac{1}{n+1}\binom{2n}{n}
+$$
+
+一下就是一些应用
+
+### [BZOJ3028 食物](https://www.luogu.com.cn/problem/P10780)
+
+> 在许多不同种类的食物中选出 $n$ 个，每种食物的限制如下：
+> 1. 承德汉堡：偶数个；
+> 2. 可乐：$0$ 个或 $1$ 个；
+> 3. 鸡腿：$0$ 个，$1$ 个或 $2$ 个；
+> 4. 蜜桃多：奇数个；
+> 5. 鸡块：$4$ 的倍数个；
+> 6. 包子：$0$ 个，$1$ 个，$2$ 个或 $3$ 个；
+> 7. 土豆片炒肉：不超过一个；
+> 8. 面包：$3$ 的倍数个；   
+> 
+> 每种食物都是以「个」为单位，只要总数加起来是 $n$ 就算一种方案．对于给出的 $n$ 你需要计算出方案数，对 $10007$ 取模．
+
+把每种食物的所有可能取值以生成函数中的幂的形式呈现，最后全部相乘得到 $f(x)$，答案就是 $[x^n]f(x)$，如下
+
+1. $\sum_{n \ge 0} x^{2n} = \frac{1}{1-x^2}$ 
+2. $1+x$
+3. $1+x+x^2=\frac{1-x^3}{1-x}$
+4. $\sum_{n \ge 0} x^{2n+1} = \frac{x}{1-x^2}$
+5. $\sum_{n \ge 0} x^{4n} = \frac{x}{1-x^4}$
+6. $1+x+x^2+x^3=\frac{1-x^4}{1-x}$
+7. $1+x$
+8. $\sum_{n \ge 0} x^{3n} = \frac{x}{1-x^3}$
+
+全部相乘得到
+
+$$
+\begin{aligned}
+F(x) &= \frac{(1+x)(1-x^3)x(1-x^4)(1+x)}{(1-x^2)(1-x)(1-x^2)(1-x^4)(1-x)(1-x^3)} \\
+&= \frac{x}{(1-x)^4} \\
+&= x \sum_{n=0}^{\infty}\binom{-4}{n}(-1)^n x^n  \\
+&= \sum_{n=0}^{\infty}\binom{4+n-1}{n} x^{n+1} \\
+&= \sum_{n=1}^{\infty}\binom{n+2}{3} x^{n}
+\end{aligned}
+$$
+
+因此答案就是
+$$
+\text{Ans}=[x^n]f(x)=\binom{n+2}{3}
+$$
+
+### 小蓝本例4
+
+> 
+
+### [「CEOI2004」Sweet](https://www.luogu.com.cn/problem/P6078?lang=zh-cn)
+
+### 小蓝本例1
+
+### 小蓝本例2
+
+### 小蓝本例3
