@@ -54,6 +54,32 @@
     text-align: left !important;
 }
 
+/* 1. 彻底隐藏原主题的背景图片、遮罩，以及我们之前加的伪元素边框 */
+.article-nav-link-wrap picture,
+.article-nav-link-wrap img,
+.article-nav-link-wrap .article-nav-bg,
+.article-nav-link-wrap::before,
+.article-nav-link-wrap::after {
+    display: none !important;
+}
+
+/* 2. 极简纯色卡片样式 */
+.article-nav-link-wrap {
+    background-color: #323439 !important; /* 你的文章同款背景色 */
+    border-radius: 10px;                  /* 圆角大小 */
+    border: none !important;              /* 强制去除任何默认边框 */
+    outline: none !important;             /* 强制去除外轮廓线 */
+    position: relative;
+    z-index: 1;
+    box-shadow: none !important;          /* 去除阴影，保持扁平化 */
+    transition: transform 0.3s ease;
+}
+
+/* 3. 悬浮动效：鼠标放上去时稍微上浮 */
+.article-nav-link-wrap:hover {
+    transform: translateY(-2px);
+}
+
 /* --- 日间模式（白色模式）：白底，深色字 --- */
 .article-nav-link-wrap {
     background-color: #ffffff !important;
@@ -85,8 +111,4 @@ html[data-theme="dark"] .article-nav-caption {
 
 html[data-theme="dark"] .article-nav-title {
     color: #eeeeee !important;
-}
-/* 悬浮动效：鼠标放上去时稍微上浮 */
-.article-nav-link-wrap:hover {
-    transform: translateY(-2px);
 }
