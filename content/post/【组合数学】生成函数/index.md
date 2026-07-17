@@ -138,6 +138,10 @@ $$
 \end{aligned}
 $$
 
+### 分数指数的意义
+
+参考后文
+
 ## 普通生成函数（OGF）
 
 ### 封闭形式
@@ -196,5 +200,69 @@ $$
 #### 例 4
 > 序列 $a_n=\binom{m}{n}$ 的形式幂级数和封闭形式，$n \ge 0$
 
+$$
+\begin{aligned}
+f(x) &= \sum_{n=0}^{\infty} \binom{m}{n} x^n \\
+&= (1+x)^m
+\end{aligned}
+$$
+
 #### 例 5
 > 序列 $a_n=\binom{m+n}{n}$ 的形式幂级数和封闭形式，$n \ge 0$
+
+我们引入广义二项式得到
+
+$$
+\begin{aligned}
+f(x) &= \sum_{n=0}^{\infty} \binom{m+n}{n}x^n \\
+&= \sum_{n=0}^{\infty} \binom{m+1+n-1}{n} x^n \\
+&= \sum_{n=0}^{\infty} (-1)^n \binom{-(m+1)}{n} x^n \\
+&= (1-x)^{-(m+1)}
+\end{aligned}
+$$
+
+
+### 斐波那契数列的生成函数
+
+斐波那契数列定义为 $a_0=0,a_1=1,a_n=a_{n-1}+a_{n-2}(n>1)$ 的数列，关于他的生成函数可以得到如下方程
+$$
+f(x)=xf(x)+x^2f(x)+x
+$$
+$$
+\Longrightarrow  f(x)=\frac{x}{1-x-x^2}
+$$
+把它变成形式幂级数的形式，有两种方式
+#### 方式一
+$$
+\begin{aligned}
+f(x) &= \frac{x}{1-x-x^2} \\
+&= x \cdot \frac{1}{1-(x+x^2)} \\
+&= x \cdot \sum_{n=0}^{\infty} (x+x^2)^n\\
+&= x \cdot \sum_{n=0}^{\infty} \sum_{k=0}^{n} \binom{n}{k} x^{(n-k)}x^{2k} \\
+&= \sum_{n=0}^{\infty} \sum_{k=0}^{n} \binom{n}{k} x^{n+k+1} \\
+&= \sum_{n=0}^{\infty} \sum_{k=0}^{\left \lfloor \frac{n-1}{2} \right \rfloor} \binom{n-k-1}{k} x^{n} \\
+\end{aligned}
+$$
+因此
+$$
+a_n=\sum_{k=0}^{\left \lfloor \frac{n-1}{2} \right \rfloor} \binom{n-k-1}{k}
+$$
+
+#### 方式二
+
+$$
+\begin{aligned}
+f(x) &= \frac{x}{1-x-x^2} \\
+&= \frac{A}{1-ax}+\frac{B}{1+bx}  \\
+&= \frac{\frac{1}{\sqrt{5}}}{1-\frac{1+\sqrt{5}}{2}x}-\frac{\frac{1}{\sqrt{5}}}{1-\frac{1-\sqrt{5}}{2}x} \\
+&= \sum_{n=0}^{\infty}\frac{1}{\sqrt{5}} \left[ \left(\frac{1+\sqrt{5}}{2}\right)^n - \left(\frac{1-\sqrt{5}}{2}\right)^n \right]x^n
+\end{aligned}
+$$
+于是 
+$$
+a_n=\frac{1}{\sqrt{5}} \left[ \left(\frac{1+\sqrt{5}}{2}\right)^n - \left(\frac{1-\sqrt{5}}{2}\right)^n \right]
+$$
+
+这个方式通用性强，对于 $\frac{f(x)}{g(x)}$ 求解生成函数可采用上面那个方法
+
+### 卡特兰数的生成函数
