@@ -75,9 +75,8 @@ $$
 $$
 f^{(n)}(x_0)=n!c_n
 $$
-
 $$
-c_n=\frac{f^{(n)}(x_0)}{n!}
+\Longrightarrow c_n=\frac{f^{(n)}(x_0)}{n!}
 $$
 于是即可得到 $f(x)$ 的泰勒展开
 $$
@@ -138,3 +137,64 @@ $$
 &= \sum_{k=0}^{\infty} \binom{n+k-1}{k} x^k
 \end{aligned}
 $$
+
+## 普通生成函数（OGF）
+
+### 封闭形式
+
+对于序列 $\langle 1,1,1,\cdots\rangle$ 的生成函数 $f(x)$，满足如下方程
+$$
+f(x)x+1=f(x)
+$$
+解得 
+$$
+f(x)=\frac{1}{1-x}
+$$
+这就是 $f(x) $ 的封闭形式     
+考虑序列 $\langle 1,p,p^2,\cdots\rangle$ 的生成函数 $f(x)$，其满足如下方程
+$$
+f(x)px+1=f(x)
+$$
+解得
+$$
+f(x)=\frac{1}{1-px}
+$$
+#### 例 1
+> 序列 $\langle 0,1,1,1,1 \cdots \rangle$ 的形式幂级数和封闭形式
+
+$$
+f(x)x+x=f(x)
+$$
+
+$$
+\Longrightarrow f(x)=\frac{x}{1-x}
+$$
+
+#### 例 2
+> 序列 $\langle 1,0,1,0,1 \cdots \rangle$ 的形式幂级数和封闭形式
+
+$$
+f(x)x^2+1=f(x)
+$$
+
+$$
+\Longrightarrow f(x)=\frac{1}{1-x^2}
+$$
+
+#### 例 3
+> 序列 $\langle 0,1,2,3,4 \cdots \rangle$ 的形式幂级数和封闭形式
+
+$$
+\begin{aligned}
+f(x) &= \sum_{k=0}^{\infty} (k+1)x^k \\
+&= \sum_{k=1}^{\infty} kx^{k-1} \\
+&= \left [ \sum_{k=0}^{\infty} x^k \right ]' \\
+&= \frac{1}{(1-x)^2}
+\end{aligned}
+$$
+
+#### 例 4
+> 序列 $a_n=\binom{m}{n}$ 的形式幂级数和封闭形式，$n \ge 0$
+
+#### 例 5
+> 序列 $a_n=\binom{m+n}{n}$ 的形式幂级数和封闭形式，$n \ge 0$

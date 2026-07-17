@@ -3,6 +3,7 @@ title: "计数题记录"
 description: "计数题记录"
 date: 2026-02-27T14:18:15+08:00
 math: true
+weight: 1
 categories:
     - 记录（OI与数学）
 tags:
