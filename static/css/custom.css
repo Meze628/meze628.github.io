@@ -54,28 +54,39 @@
     text-align: left !important;
 }
 
-/* 1. 彻底隐藏原主题的背景图片、遮罩，以及我们之前加的伪元素边框 */
-.article-nav-link-wrap picture,
-.article-nav-link-wrap img,
-.article-nav-link-wrap .article-nav-bg,
-.article-nav-link-wrap::before,
-.article-nav-link-wrap::after {
-    display: none !important;
-}
-
-/* 2. 极简纯色卡片样式 */
+/* --- 日间模式（白色模式）：白底，深色字 --- */
 .article-nav-link-wrap {
-    background-color: #323439 !important; /* 你的文章同款背景色 */
-    border-radius: 10px;                  /* 圆角大小 */
-    border: none !important;              /* 强制去除任何默认边框 */
-    outline: none !important;             /* 强制去除外轮廓线 */
-    position: relative;
-    z-index: 1;
-    box-shadow: none !important;          /* 去除阴影，保持扁平化 */
-    transition: transform 0.3s ease;
+    background-color: #ffffff !important;
+    background-image: none !important; /* 强制移除可能存在的封面背景图 */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* 添加淡阴影划分卡片边界 */
 }
 
-/* 3. 悬浮动效：鼠标放上去时稍微上浮 */
+.article-nav-link-wrap::before {
+    display: none !important; /* 移除原主题自带的纯黑半透明图层遮罩 */
+}
+
+.article-nav-caption {
+    color: #888888 !important; /* "上一篇/下一篇" 的提示文字颜色 */
+}
+
+.article-nav-title {
+    color: #333333 !important; /* 导航文章标题的颜色 */
+}
+
+/* --- 夜间模式（黑色模式）：偏黑底，浅色字 --- */
+html[data-theme="dark"] .article-nav-link-wrap {
+    background-color: #1e1e24 !important; /* 偏黑的深灰色底 */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+html[data-theme="dark"] .article-nav-caption {
+    color: #a0a0a0 !important;
+}
+
+html[data-theme="dark"] .article-nav-title {
+    color: #eeeeee !important;
+}
+/* 悬浮动效：鼠标放上去时稍微上浮 */
 .article-nav-link-wrap:hover {
     transform: translateY(-2px);
 }
