@@ -11,7 +11,7 @@ tags:
 
 ## 生成函数简介
 
-对于式子 $\sum a_n x_n$ 是有限项相加时，称为多项式；无限项相加时，成为幂级数。形式幂级数的意思就是 $x$ 的意义仅表示形式符号。    
+对于式子 $\sum a_n x_n$ 是有限项相加时，称为多项式；无限项相加时，称为幂级数。形式幂级数的意思就是 $x$ 的意义仅表示形式符号。    
 生成函数本质上是形式幂级数或者多项式，对于序列 $\langle a_0,a_1,a_2,\cdots \rangle$，它的生成函数是
 $$
 f(x)=a_0+a_1x+a_2x^2+\cdots
@@ -55,7 +55,7 @@ $$
 
 ## 泰勒展开
 
-函数 $f(x)$ 包含 $x_0$ 处的开区间有任意阶导数，我们希望把 $f(x)$ 写成幂级数的形式。
+设函数 $f(x)$ 在包含 $x_0$ 处的开区间有任意阶导数，我们希望把 $f(x)$ 写成幂级数的形式。
 $$
 f(x)=c_0+c_1(x-x_0)+c_2(x-x_0)^2+ \cdots
 $$
@@ -86,17 +86,23 @@ $$
 ## 广义二项式
 ### 广义二项式系数
 一般的组合数都要求两个参数都是非负整数，而广义二项式系数则可以要求上面的数是实数，如下：
-$$\binom{\alpha}{k} = \frac{\alpha^{\underline{k}}}{k!} = \frac{\alpha(\alpha-1)(\alpha-2)\cdots(\alpha-k+1)}{k!}$$
+
+$$
+\binom{\alpha}{k} = \frac{\alpha^{\underline{k}}}{k!} = \frac{\alpha(\alpha-1)(\alpha-2)\cdots(\alpha-k+1)}{k!}
+$$
+
 特别地，当 $k=0$ 时，规定 $\binom{\alpha}{0} = 1$；当 $k < 0$ 时，$\binom{\alpha}{k} = 0$。
+
 ### 广义二项式定理
 对于实数 $\alpha$ 和 $|x|<1$（保证等式右侧无穷级数收敛），有
 $$
 (1+x)^{\alpha}=\sum_{k=0}^{\infty}\binom{\alpha}{k}x^{k}
 $$
 在此基础上进行推广得到如下，其中 $|x|<|y|$
+
 $$
 \begin{aligned}
-(x+y)^{\alpha} &= y^{\alpha}(1+\frac{x}{y}) \\
+(x+y)^{\alpha} &= y^{\alpha}(1+\frac{x}{y})^{\alpha} \\
 &= y^{\alpha}\sum_{k=0}^{\infty}\binom{\alpha}{k}\left ( \frac{x}{y} \right )^k \\
 &= \sum_{k=0}^{\infty} \binom{\alpha}{k}x^k y^{\alpha-k}
 \end{aligned} 
@@ -115,7 +121,7 @@ $$
 
 
 ### 负指数的意义
-当 $n$ 正数时
+当 $n$ 正整数时
 $$
 \binom{-n}{k} = \frac{-n(-n-1)\cdots(-n-k+1)}{k!} = (-1)^k \frac{n(n+1)\cdots(n+k-1)}{k!} = (-1)^k \binom{n+k-1}{k}
 $$
