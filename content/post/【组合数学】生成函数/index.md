@@ -532,11 +532,17 @@ $$
 > 证明：对一切正整数 $n$，有
 > 
 > $$\sum_{i=0}^{n} \binom{2n+1}{2i} \binom{2i}{i} 2^{2n-2i+1} = \binom{4n+2}{2n+1}$$
+注意到 $\binom{4n+2}{2n+1}$ 是 $(1+x)^{4n+2}$ 中 $x^{2n+1}$ 的系数，不妨对式子再次展开一次
 
+$$
+\begin{aligned}
+(1+x)^{4n+2} &= (1+x^2+2x)^{2n+1} \\
+&= \sum_{i=0}^{2n+1}\binom{2n+1}{i}(1+x^2)^i2^{2n+1-i}x^{2n+1-i} \\
+&= \sum_{i=0}^{2n+1}\binom{2n+1}{i}2^{2n+1-i}x^{2n+1-i}\sum_{k=0}^{i}\binom{i}{k}x^{2k} \\
+\end{aligned}
+$$
+此时式子中 $x^{2n+1}$ 的系数必须保证 $i=2k$，即
+$$
+[x^{2n+1}](1+x)^{4n+2}=\sum_{i=0}^{n}\binom{2n+1}{2i}\binom{2i}{i}2^{2n-2i+1}=\binom{4n+2}{2n+1}
+$$
 
-
-### 小蓝本例3
-
-> 证明：
-> 
-> $$\sum_{k=0}^{\left[ \frac{n-1}{2} \right]} (-1)^k \binom{n+1}{k} \binom{2n-2k-1}{n} = \frac{1}{2} n(n+1) \quad (n \geqslant 1)$$
