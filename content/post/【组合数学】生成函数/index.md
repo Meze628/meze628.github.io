@@ -11,7 +11,7 @@ tags:
 
 ## 生成函数简介
 
-对于式子 $\sum a_n x^n$ 是有限项相加时，称为多项式；无限项相加时，称为幂级数。形式幂级数的意思就是 $x$ 的意义仅表示形式符号。    
+对于式子 $\sum a_n x^n$ 是有限项相加时，称为多项式；无限项相加时，称为幂级数。形式幂级数（FPS）的意思就是 $x$ 的意义仅表示形式符号。    
 生成函数本质上是形式幂级数或者多项式，对于序列 $\langle a_0,a_1,a_2,\cdots \rangle$，它的生成函数是
 $$
 f(x)=a_0+a_1x+a_2x^2+\cdots
@@ -388,8 +388,102 @@ $$
 > 
 > 试求“好”牌组的个数。
 
+考虑它的生成函数
+
+$$
+\begin{aligned}
+f(x) &= (1+x^{2^0})^2(1+x^{2^1})^3(1+x^{2^2})^3 \cdots (1+x^{2^{10}})^3 \\
+&= \frac{1}{1+x} \left [ (1+x^{2^0})(1+x^{2^1})(1+x^{2^2}) \cdots (1+x^{2^{10}})
+\right ]^3 \\
+&= \frac{1}{1+x} \left [ 1+x+x^2+x^3+ \cdot x^{2^{11}-1}\right ]^3 \\
+&= \frac{1}{1+x} \left ( \frac{1-x^{2^{11}}}{1-x} \right )^3 \\
+&= \frac{\left ( 1-x^{2^{11}} \right ) ^3}{(1+x)(1-x)^3} 
+\end{aligned}
+$$
+
+因为 $n \le 2020 <2^{11}$，所以我们可以发分子看作是 $1$
+
+$$
+\begin{aligned}
+g(x) &= \frac{1}{(1+x)(1-x)^3} \\
+&= \frac{1}{(1-x^2)(1-x)^2} \\
+&= \left ( \sum_{i=0}^{\infty}x^{2i} \right )\left ( \sum_{j=0}^{\infty} (j+1) x^{j} \right ) \\
+&= \sum_{n=0}^{\infty}\sum_{i=0}^{\left \lfloor \frac{n}{2} \right \rfloor }(n-2i+1) x^{n} \\
+&= \sum_{n=0}^{\infty}\left \lfloor \frac{(n+2)^2}{4} \right \rfloor x^{n} \\
+\end{aligned}
+$$
+
+所以
+$$
+\text{Ans}=[x^n]g(x)=\left \lfloor \frac{(n+2)^2}{4} \right \rfloor
+$$
 
 ### [「CEOI2004」Sweet](https://www.luogu.com.cn/problem/P6078?lang=zh-cn)
+> 有 $n$ 堆糖果. 不同的堆里糖果的种类不同 (即同一个堆里的糖果种类是相同的, 不同的堆里的糖果的种类是不同的) . 第 $i$ 个堆里有 $m_i$ 个糖果. 现在要吃掉至少 $a$ 个糖果, 但不超过 $b$ 个. 求有多少种方案。答案对 $2004$ 取模
+> 
+> 两种方案不同当且仅当吃的个数不同，或者吃的糖果中，某一种糖果的个数在两个方案中不同.
+> 
+> $n \le 10, 0 \le a \le b \le 10^7, m_i \le 10^6$.
+
+$$
+\begin{aligned}
+f(x) &= \prod_{i=1}^{n} \left ( 1+x+x^2+ \cdots +x^{m_i} \right ) \\
+&= \prod_{i=1}^{n} \left ( \frac{1-x^{m_i+1}}{1-x} \right ) \\
+&= \frac{1}{(1-x)^n} \prod_{i=1}^{n} \left ( 1-x^{m_i+1} \right ) \\
+&= \left [ \sum_{k=0}^{\infty}\binom{n+k-1}{k} x^k \right ] \prod_{i=1}^{n} \left ( 1-x^{m_i+1} \right ) \\
+\end{aligned}
+$$
+
+由于这里 $n$ 很小，所以我们可以暴力枚举后面的连乘，设 $a_{k}=[x^k]\prod_{i=1}^{n} \left ( 1-x^{m_i+1} \right )$，那么原式
+
+$$
+\begin{aligned}
+f(x) &= \left [ \sum_{k=0}^{\infty}\binom{n+k-1}{k} x^k \right ] \left ( \sum_{i=0}^{\infty}a_ix^i \right )\\
+&= \sum_{k=0}^{\infty} \sum_{i=0}^{k} a_{k-i} \binom{n+i-1}{i} x^k \\
+\end{aligned}
+$$
+
+答案是幂在 $[a,b]$ 上的系数和
+
+$$
+\begin{aligned}
+\text{Ans} &= \sum_{i=a}^{b} [x^i] f(x) \\
+&= \sum_{i=a}^{b} \sum_{j=0}^{i} a_{i-j} \binom{n+j-1}{j} \\
+&= \sum_{k=0}^{b} a_k \sum_{j=a-k}^{b-k} \binom{n+j-1}{j} \\
+\end{aligned}
+$$
+
+我们考虑如何把后面那个求和直接算出来，在这里介绍一个恒等式
+
+$$
+\sum_{i=k}^{n} \binom{i}{k} = \binom{n+1}{k+1} \\
+或者 \quad \sum_{j=0}^{m} \binom{k+j}{k} = \binom{k+m+1}{k+1}   
+$$
+
+可以从组合意义理解，只需要说一下第一个式子的组合意义，第二个式子和第一个式子其实是一样的，从 $n+1$ 个元素里面选 $k+1$ 个，相当于枚举最后一个被选的元素的位置，即可得到 LHS。当然也可以用本节学的生成函数推导（在我看来生成函数推导比常规的代数推导更美观且更具技巧性）
+$$
+\binom{k+j}{k} = \binom{k+j}{j} = [x^j]\frac{1}{(1-x)^{k+1}} 
+$$
+注意到对于序列 $a_j=\binom{k+j}{j}$ 的生成函数，等式同时乘以 $\frac{1}{1-x}$ 就可以得到 $a_j$ 的前缀和序列的生成函数，因此
+
+$$
+\begin{aligned}
+\sum_{j=0}^{m}\binom{k+j}{j} &= [x^m]\frac{1}{(1-x)^{k+2}}  \\
+&= \binom{k+1+m}{m} \\
+&= \binom{k+1+m}{k+1} \\
+\end{aligned}
+$$
+
+对于这道题来说，答案就是
+
+$$
+\begin{aligned}
+\text{Ans} &= \sum_{k=0}^{b} a_k \sum_{j=a-k}^{b-k} \binom{n+j-1}{j} \\
+&= \sum_{k=0}^{b} a_k \left [ \binom{n+b-k}{n} -\binom{n+a-k-1}{n} \right ]\\
+\end{aligned}
+$$
+
+可以在 $O(b)$ 的时间复杂度内求出来。最后答案要对 $2004$ 取模，由于不是质数，无法使用逆元的方式取模，我们考虑如何计算 $\frac{A}{B} \pmod P$，注意 $A=cB \quad c \in \mathbb{N}$，因此 $\frac{A}{B} \equiv c \pmod P$，设 $c=kP+r$，于是 $\frac{A}{B} \mod P =r$，而 $A=cB=kPB+rB$，因此 $\frac{A \pmod {PB}}{B}=r$，而在原式里，$B=n!$，因此 $PB$ 的 数量级是 $O(10^9)$。可以实现。
 
 
 
