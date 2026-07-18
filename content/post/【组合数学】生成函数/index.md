@@ -338,7 +338,7 @@ $$
 C_n= \frac{1}{n+1}\binom{2n}{n}
 $$
 
-以下就是一些应用
+以下就是一些应用，应用主要体现在组合计数，递推数列求通项公式等。
 
 ### [BZOJ3028 食物](https://www.luogu.com.cn/problem/P10780)
 
@@ -485,10 +485,58 @@ $$
 
 可以在 $O(b)$ 的时间复杂度内求出来。最后答案要对 $2004$ 取模，由于不是质数，无法使用逆元的方式取模，我们考虑如何计算 $\frac{A}{B} \pmod P$，注意 $A=cB \quad c \in \mathbb{N}$，因此 $\frac{A}{B} \equiv c \pmod P$，设 $c=kP+r$，于是 $\frac{A}{B} \mod P =r$，而 $A=cB=kPB+rB$，因此 $\frac{A \pmod {PB}}{B}=r$，而在原式里，$B=n!$，因此 $PB$ 的 数量级是 $O(10^9)$。可以实现。
 
-
-
 ### 小蓝本例1
+
+> 已知 $a_0 = -1, a_1 = 1, a_n = 2a_{n-1} + 3a_{n-2} + 3^n (n \ge 2)$，求 $a_n$.
+
+设关于 $a_i$ 的生成函数 $f(x)$，易得关于 $f(x)$ 的方程
+
+$$
+\begin{aligned}
+(1-2x-3x^2)f(x) &= -2 + \sum_{i=0}^{\infty} 3^ix^i \\
+&= \frac{6x-1}{1-3x} \\
+\end{aligned}
+$$
+解出 $f(x)$ 并进行拆分
+$$
+\begin{aligned}
+f(x) &= \frac{6x-1}{(1+x)(1-3x)^2}  \\
+&= \frac{A}{1+x}+\frac{B}{1-3x}+\frac{C}{(1-3x)^2}  \\
+\end{aligned}
+$$
+
+等式两边同时乘以原分母得到
+
+$$
+6x-1=(1-3x)^2A+(1+x)(1-3x)B+(1+x)C
+$$
+
+令 $x=\frac{1}{3}$ 可以求出 $C=\frac{3}{4}$，令 $x=-1$ 可以解得 $A=-\frac{7}{16}$，再联立解得 $B=-\frac{21}{16}$，于是
+
+$$
+\begin{aligned}
+f(x) &= -\frac{7}{16}\sum_{n=0}^{\infty}(-1)^n x^n -\frac{21}{16}\sum_{n=0}^{\infty}3^n x^n+\frac{3}{4}\sum_{n=0}^{\infty}(n+1) 3^n x^n  \\
+&= \sum_{n=0}^{\infty} \left [ \frac{(4n-3)\cdot 3^{n+1}-7(-1)^n}{16} \right ]x^n
+\end{aligned}
+$$
+
+因此 
+
+$$
+a_n=\frac{(4n-3)\cdot 3^{n+1}-7(-1)^n}{16} 
+$$
+
 
 ### 小蓝本例2
 
+> 证明：对一切正整数 $n$，有
+> 
+> $$\sum_{i=0}^{n} \binom{2n+1}{2i} \binom{2i}{i} 2^{2n-2i+1} = \binom{4n+2}{2n+1}$$
+
+
+
 ### 小蓝本例3
+
+> 证明：
+> 
+> $$\sum_{k=0}^{\left[ \frac{n-1}{2} \right]} (-1)^k \binom{n+1}{k} \binom{2n-2k-1}{n} = \frac{1}{2} n(n+1) \quad (n \geqslant 1)$$
