@@ -264,7 +264,7 @@ $$
 $$
 \begin{aligned}
 f(x) &= \frac{x}{1-x-x^2} \\
-&= \frac{A}{1-ax}+\frac{B}{1+bx}  \\
+&= \frac{A}{1-ax}+\frac{B}{1-bx}  \\
 &= \frac{\frac{1}{\sqrt{5}}}{1-\frac{1+\sqrt{5}}{2}x}-\frac{\frac{1}{\sqrt{5}}}{1-\frac{1-\sqrt{5}}{2}x} \\
 &= \sum_{n=0}^{\infty}\frac{1}{\sqrt{5}} \left[ \left(\frac{1+\sqrt{5}}{2}\right)^n - \left(\frac{1-\sqrt{5}}{2}\right)^n \right]x^n
 \end{aligned}
