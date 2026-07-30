@@ -1,5 +1,5 @@
 ---
-title: "汇编与逆向教程 by Claude Opus4.6"
+title: "汇编与逆向教程 by Claude Opus 4.6"
 description: "CTFREbyClaude"
 date: 2026-07-30T12:39:00+08:00
 math: true
@@ -8,8 +8,9 @@ _build:
   render: always
 ---
 
+本项目完全由 Claude Opus 4.6 完成，没有人类参与的成分，望周知。
 
-# 汇编语言与逆向工程完全指南（面向 CTF Reverse）
+汇编语言与逆向工程完全指南（面向 CTF Reverse）     
 
 > **前置假设**：你有 C++ / 信息竞赛基础，熟悉变量、指针、函数调用、递归等概念。     
 > **目标架构**：x86-64（也称 amd64），这是 CTF RE 中 **最常见** 的架构。     
