@@ -1,5 +1,5 @@
 ---
-title: "CTFREbyClaude"
+title: "汇编与逆向教程 by Claude Opus4.6"
 description: "CTFREbyClaude"
 date: 2026-07-30T12:39:00+08:00
 math: true
