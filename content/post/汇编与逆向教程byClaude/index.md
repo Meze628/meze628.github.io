@@ -1,6 +1,6 @@
 ---
-title: "汇编与逆向教程 by Opus4.6"
-description: "汇编与逆向教程 by Opus4.6"
+title: "汇编与逆向教程byClaude"
+description: "汇编与逆向教程byClaude"
 date: 2026-07-30T12:39:00+08:00
 math: true
 _build:
