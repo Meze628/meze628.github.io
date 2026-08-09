@@ -316,7 +316,7 @@ for(int i=0;i<=n-m;i++)
 前面的几道题的记录我都当作题解去写，后面只会记录核心思路，边界细节什么的不在描述。
 
 
-## [[CF2556D] A Ribbon for Tomorrow](https://codeforces.com/contest/2256/problem/D)
+## [CF2556D A Ribbon for Tomorrow](https://codeforces.com/contest/2256/problem/D)
 
 **性质转化+组合计数**
 
