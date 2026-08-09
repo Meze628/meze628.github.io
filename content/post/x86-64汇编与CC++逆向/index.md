@@ -1,7 +1,7 @@
 ---
 title: "x86-64 汇编与 C/C++ 逆向"
 description: "x86-64 汇编与 C/C++ 逆向"
-date: 2026-08-7T18:39:00+18:00
+date: 2026-08-07T18:39:00+18:00
 math: true
 categories:
     - CTF笔记
