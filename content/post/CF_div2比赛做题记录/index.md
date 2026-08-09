@@ -1,7 +1,7 @@
 ---
 title: "CF div2 做题记录"
 description: "Cf Div2 做题记录"
-date: 2026-03-01T17:51:34+08:00
+date: 2026-08-08T17:51:34+08:00
 math: true
 categories:
     - 记录（OI与数学）
