@@ -342,6 +342,8 @@ $$
 &= (-1)^{\text{inv(p)}}\prod_{i=1}^{n-1} i! \pmod{n} \\
 \end{aligned}
 $$
+
+
 $\text{inv(p)}$ 表示排列的逆序对个数，$O(n \log n)$ 即可做到，其中 $\log n$ 是用树状数组求逆序对个数。那么如何做到 $O(n)$。我们不需要关注有多少对逆序对，我们只需要关注逆序对个数的奇偶性。
 
 ## [[ARC223E] Yin-Yang Two Bits Insertion](https://atcoder.jp/contests/arc223/tasks/arc223_e)
