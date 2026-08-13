@@ -316,7 +316,7 @@ for(int i=0;i<=n-m;i++)
 前面的几道题的记录我都当作题解去写，后面只会记录核心思路，边界细节什么的不再描述。
 
 
-## [CF2556D A Ribbon for Tomorrow](https://codeforces.com/contest/2256/problem/D)
+## [CF2256D A Ribbon for Tomorrow](https://codeforces.com/contest/2256/problem/D)
 
 **性质转化+组合计数**
 
@@ -326,6 +326,7 @@ for(int i=0;i<=n-m;i++)
 $$
 \boxed{\binom{c_0-1}{r_0-1}\binom{c_1-1}{r_1-1}}
 $$
+
 $c_0,c_1$：0 和 1 的总个数。
 $r_0,r_1$：0 段和 1 段的个数。
 
@@ -337,12 +338,11 @@ $r_0,r_1$：0 段和 1 段的个数。
 
 $$
 \begin{aligned}
-\text{Ans} &= \prod_{i<j} (p_i-p_j) \pmod{n} \\
+\text{Ans} &= \prod_{i < j} (p_i-p_j) \pmod{n} \\
 &= (-1)^{\text{inv(p)}}\prod_{i=1}^{n-1} i^{n-i} \pmod{n} \\
 &= (-1)^{\text{inv(p)}}\prod_{i=1}^{n-1} i! \pmod{n} \\
 \end{aligned}
 $$
-
 
 $\text{inv(p)}$ 表示排列的逆序对个数，$O(n \log n)$ 即可做到，其中 $\log n$ 是用树状数组求逆序对个数。那么如何做到 $O(n)$。我们不需要关注有多少对逆序对，我们只需要关注逆序对个数的奇偶性。
 
