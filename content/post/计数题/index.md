@@ -313,7 +313,7 @@ for(int i=0;i<=n-m;i++)
 
 
 
-前面的几道题的记录我都当作题解去写，后面只会记录核心思路，边界细节什么的不在描述。
+前面的几道题的记录我都当作题解去写，后面只会记录核心思路，边界细节什么的不再描述。
 
 
 ## [CF2556D A Ribbon for Tomorrow](https://codeforces.com/contest/2256/problem/D)
@@ -328,3 +328,22 @@ $$
 $$
 $c_0,c_1$：0 和 1 的总个数。
 $r_0,r_1$：0 段和 1 段的个数。
+
+## [[ARC223C] Whole Product of Pairwise Distances](https://atcoder.jp/contests/arc223/tasks/arc223_c)
+
+**挖掘性质+排列计数**
+
+注意到若有两数满足 $a_i \equiv a_j \pmod{n}$，则有 $|a_i-a_j| \mod{n}=0$。又注意到对于任意排列的答案都是一样的，我们对原数列进行排序就可以去掉绝对值，而又有 $(a_i-a_j) \mod{n} =(a_i \mod{n} -a_j \mod{n}) \mod n$，所以我们取 $p_i \gets a_i \mod{n}$。若只要有两数一样，答案就是 $0$。否则原序列就是 $0$ ~ $n-1$ 的排列。考虑如何计算这个答案。考虑转化计数，枚举差值，有如下
+
+$$
+\begin{aligned}
+\text{Ans} &= \prod_{i<j} (p_i-p_j) \pmod{n} \\
+&= (-1)^{\text{inv(p)}}\prod_{i=1}^{n-1} i^{n-i} \pmod{n} \\
+&= (-1)^{\text{inv(p)}}\prod_{i=1}^{n-1} i! \pmod{n} \\
+\end{aligned}
+$$
+$\text{inv(p)}$ 表示排列的逆序对个数，$O(n \log n)$ 即可做到，其中 $\log n$ 是用树状数组求逆序对个数。那么如何做到 $O(n)$。我们不需要关注有多少对逆序对，我们只需要关注逆序对个数的奇偶性。
+
+## [[ARC223E] Yin-Yang Two Bits Insertion](https://atcoder.jp/contests/arc223/tasks/arc223_e)
+
+**性质转化+DP**
