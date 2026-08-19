@@ -49,3 +49,23 @@ $$
 $$
 $c_0,c_1$：0 和 1 的总个数。
 $r_0,r_1$：0 段和 1 段的个数。
+
+## CF2257
+
+### [D. Bermuda Rectangle](https://codeforces.com/contest/2257/problem/D)
+
+设 $S$ 的所有因数是 $d_1,d_2 \cdots d_n$，这里可以 $O(\sqrt{S})$ 求出，$n$ 的数量级也是 $O(\sqrt{S})$ 的。根据样例解释里的图片，我们按列计数，考虑在没有 $x,y$ 的限制下如何计算一段前缀面积。设一段边长为 $k$ 的前缀贡献的面积是 $p_k$。
+
+$$
+p_k = (k-d_j)\frac{S}{d_{j+1}} + \sum_{i=1}^{d_i \le k} (d_i-d_{i-1}) \frac{S}{d_i}
+$$
+
+这里 $d_j$ 表示最后一个满足 $d_j \le k$ 的数，可以二分出来，前面二分的复杂度是 $O(\log \sqrt{S})$，后面求和可以利用前缀和数组做到 $O(1)$。
+考虑对于每一对 $x,y$，我们只需要二分出第一个 $k$ 使得 $\frac{S}{d_k} \le y$，于是答案就是
+
+$$
+t=\min{ \{ x,d_{k-1}\} }, \\
+\text{Ans}=yt+p_x-p_{t}
+$$
+
+可以在 $O(\sum \sqrt{S}+q\log \sqrt{S})$ 的时间复杂度内做到。
