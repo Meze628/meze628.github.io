@@ -50,7 +50,7 @@ $$
 $c_0,c_1$：0 和 1 的总个数。
 $r_0,r_1$：0 段和 1 段的个数。
 
-## CF2257
+## [CF2257](https://codeforces.com/contest/2257)
 
 ### [D. Bermuda Rectangle](https://codeforces.com/contest/2257/problem/D)
 
