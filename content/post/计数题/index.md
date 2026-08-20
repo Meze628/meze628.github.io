@@ -291,6 +291,8 @@ for(int i=0;i<=n-m;i++)
 
 ## [P17224 [Math×Girl²] 搬家](https://www.luogu.com.cn/problem/P17224)
 
+**挖掘性质+组合计数**
+
 题目中的 $N$ 和 $M$ 这里写为 $n$ 和 $m$。    
 
 对于一组确定的大小，考虑怎么选是最优的，不妨把大小为 $2$ 的物品（假设是第 $k$ 个）看成两个大小为 $1$ 且价值为 $\frac{3^{n-k}}{2}$ 的物品，只不过这两个物品必须都选或者都不选。注意到 $3^{n-k+1} > \frac{3^{n-k}}{2} > 3^{n-k-1}$，因此这两个物品的相对价值较之前并没有改变，而现在所有物品的大小都是 $1$，价值按照编号递减，因此最优的选法应当是按编号从小到大扫描，能装就装，不能装就跳过。     
@@ -395,3 +397,24 @@ $$
 
 ## [[ARC107D] Number of Multisets](https://atcoder.jp/contests/arc107/tasks/arc107_d)
 
+**计数DP**
+
+设 $dp_{i,j}$ 表示用了 $i$ 个数，和为 $j$ 的方案数，因为转移过程中 $i$ 和 $j$ 只能是整数。若 $dp_{i,j}$ 的 Multiset 里面含有 $1$，则可以从 $dp_{i-1,j-1}$ 转移而来，若没有呢？注意到将 Multiset 里的所有数乘以 $2$ 后，每个数仍然可以表示为 $\frac{1}{2^i}$，总和变为了 $2j$，又注意到这样的集合与 $dp_{i,2j}$ 构成双射。因此有如下
+
+$$
+dp_{i,j}=dp_{i-1,j-1}+dp_{i,2j} \cdot [2j \le i]
+$$
+
+可以 $O(nk)$ 做到，这里 $2j \le i$ 是因为当 $2j > i$ 时，Multiset 里必然包含 $1$。
+
+## [[ABC217F] Make Pair](https://atcoder.jp/contests/abc217/tasks/abc217_f)
+
+**区间DP**
+
+
+
+## [[ABC252G] Pre-Order](https://atcoder.jp/contests/abc252/tasks/abc252_g)
+
+**区间DP**
+
+## [[ABC284G] Only Once](https://atcoder.jp/contests/abc284/tasks/abc284_g)
