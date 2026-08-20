@@ -289,7 +289,7 @@ for(int i=0;i<=n-m;i++)
 >
 > 这就是贡献延后计算：先把空位留着，等特定元素的限制条件被触发时，再统一计算它们填入空位的排列方案。
 
-## [[Math×Girl²] 搬家]()
+## [P17224 [Math×Girl²] 搬家](https://www.luogu.com.cn/problem/P17224)
 
 题目中的 $N$ 和 $M$ 这里写为 $n$ 和 $m$。    
 
@@ -376,17 +376,21 @@ $$
 因此题目最终转化成了：对数组 $x$ 执行若干次操作二，使得 $0 < x_i \le y_i$ 且 $x_i$ 与 $y_i$ 共奇偶，或者 $x_i=y_i=0$
 
 令 $dp_{i,j}$ 表示处理到了 $x_{i}$，并在位置 $i$ 执行了 $j$ 次操作二，此时是否合法，$j \in \{ 0,1,2\}$，有如下转移：
+
 $$
 dp_{i,j} = \bigvee_{k \in \{ 0,1,2 \} } dp_{i-1,k} \wedge \operatorname{jud}_{i,j,k}
 $$
+
 当满足如下时，$\operatorname{jud}_{i,j,k}=1$，否则 $\operatorname{jud}_{i,j,k}=0$。 
+
 $$
 \begin{cases}
 x_i + j + k \le y_i \\
 x_i + j + k \equiv y_i \pmod 2 \\
 x_i + j + k > 0 \ \lor\ y_i = 0
 \end{cases}
-$$    
+$$
+
 时间复杂度是 $O(n)$ 的。
 
 ## [[ARC107D] Number of Multisets](https://atcoder.jp/contests/arc107/tasks/arc107_d)
