@@ -15,7 +15,7 @@ categories:
 
 [P4779 【模板】单源最短路径（标准版）](https://www.luogu.com.cn/problem/P4779)
 
-```cpp
+```cpp {class="code-closed"}
 #include<bits/stdc++.h>
 using namespace std;
 
@@ -73,7 +73,7 @@ int main(){
 
 [P3371 【模板】单源最短路径（弱化版）](https://www.luogu.com.cn/problem/P3371)
 
-```cpp
+```cpp {class="code-closed"}
 #include<bits/stdc++.h>
 using namespace std;
 
@@ -127,7 +127,7 @@ int main(){
 
 #### Kruskal
 
-```cpp
+```cpp {class="code-closed"}
 #include<bits/stdc++.h>
 using namespace std;
 
@@ -168,7 +168,7 @@ int main(){
 
 #### prim
 
-```cpp
+```cpp {class="code-closed"}
 ```
 
 ### 强连通分量
@@ -177,7 +177,7 @@ int main(){
 
 #### tarjan
 
-```cpp
+```cpp {class="code-closed"}
 #include<bits/stdc++.h>
 using namespace std;
 
@@ -241,7 +241,7 @@ int main(){
 
 #### 网络最大流（EK）
 
-```cpp
+```cpp {class="code-closed"}
 #include<bits/stdc++.h>
 using namespace std;
 
@@ -310,7 +310,7 @@ int main(){
 
 #### 网络最大流（Dinic+当前弧优化）
 
-```cpp
+```cpp {class="code-closed"}
 #include<bits/stdc++.h>
 using namespace std;
 
@@ -386,7 +386,7 @@ int main(){
 
 [P3367 【模板】并查集](https://www.luogu.com.cn/problem/P3367)
 
-```cpp
+```cpp {class="code-closed"}
 #include<bits/stdc++.h>
 using namespace std;
 
