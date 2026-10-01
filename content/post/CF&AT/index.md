@@ -1,6 +1,6 @@
 ---
-title: "CF div2 做题记录"
-description: "Cf Div2 做题记录"
+title: "CF&AT"
+description: "CF&AT"
 date: 2026-08-08T17:51:34+08:00
 math: true
 categories:
