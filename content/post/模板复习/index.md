@@ -11,13 +11,9 @@ categories:
 
 ### 单源最短路
 
-
-
 #### dijkstra
 
 [P4779 【模板】单源最短路径（标准版）](https://www.luogu.com.cn/problem/P4779)
-
-{{< details summary="Code" >}}
 
 ```cpp
 #include<bits/stdc++.h>
@@ -72,13 +68,10 @@ int main(){
 }
 ```
 
-{{< /details >}}
 
 #### spfa
 
 [P3371 【模板】单源最短路径（弱化版）](https://www.luogu.com.cn/problem/P3371)
-
-{{< details summary="Code" >}}
 
 ```cpp
 #include<bits/stdc++.h>
@@ -127,16 +120,12 @@ int main(){
 }
 ```
 
-{{< /details >}}
-
 ### 最小生成树
 [P3366 【模板】最小生成树](https://www.luogu.com.cn/problem/P3366)
 
 #### 
 
 #### Kruskal
-
-{{< details summary="Code" >}}
 
 ```cpp
 #include<bits/stdc++.h>
@@ -177,24 +166,16 @@ int main(){
 }
 ```
 
-{{< /details >}}
-
 #### prim
-
-{{< details summary="Code" >}}
 
 ```cpp
 ```
-
-{{< /details >}}
 
 ### 强连通分量
 
 [[图论与代数结构 701] 强连通分量](https://www.luogu.com.cn/problem/B3609)
 
 #### tarjan
-
-{{< details summary="Code" >}}
 
 ```cpp
 #include<bits/stdc++.h>
@@ -254,15 +235,11 @@ int main(){
 }
 ```
 
-{{< /details >}}
-
 ### 网络流
 
 [【模板】网络最大流](https://www.luogu.com.cn/problem/P3376)
 
 #### 网络最大流（EK）
-
-{{< details summary="Code" >}}
 
 ```cpp
 #include<bits/stdc++.h>
@@ -331,11 +308,7 @@ int main(){
 }
 ```
 
-{{< /details >}}
-
 #### 网络最大流（Dinic+当前弧优化）
-
-{{< details summary="Code" >}}
 
 ```cpp
 #include<bits/stdc++.h>
@@ -407,15 +380,11 @@ int main(){
 }
 ```
 
-{{< /details >}}
-
 ## 数据结构
 
 ### 并查集
 
 [P3367 【模板】并查集](https://www.luogu.com.cn/problem/P3367)
-
-{{< details summary="Code" >}}
 
 ```cpp
 #include<bits/stdc++.h>
@@ -445,8 +414,6 @@ int main(){
     return 0;
 }
 ```
-
-{{< /details >}}
 
 ## 数学
 
