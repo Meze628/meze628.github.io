@@ -1,6 +1,6 @@
 ---
-title: "计数"
-description: "计数"
+title: "计数题"
+description: "计数题"
 date: 2026-02-27T14:18:15+08:00
 math: true
 weight: 1
