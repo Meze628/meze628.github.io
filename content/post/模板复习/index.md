@@ -415,7 +415,118 @@ int main(){
 
 ## 数据结构
 
+### 线段树
 
+[P3373 【模板】线段树 2](https://www.luogu.com.cn/problem/P3373)
+
+```cpp {class="code-closed"}
+#include<cstdio>
+using namespace std;
+
+typedef long long ll;
+const ll N=100005;
+ll n,q,M,a[N],tr[4*N];
+ll tag[4*N],mul[4*N];
+
+void pd(ll id,ll s,ll t){
+    ll l=id<<1,r=id<<1|1;
+    ll mid=s+t>>1;
+    if (mul[id]!=1){
+        mul[l]=(mul[l]*mul[id])%M;
+        mul[r]=(mul[r]*mul[id])%M;
+        tag[l]=(tag[l]*mul[id])%M;
+        tag[r]=(tag[r]*mul[id])%M;
+        tr[l]=(tr[l]*mul[id])%M;
+        tr[r]=(tr[r]*mul[id])%M;
+        mul[id]=1;
+    }
+    if (tag[id]){
+        tag[l]=(tag[l]+tag[id])%M;
+        tag[r]=(tag[r]+tag[id])%M;
+        tr[l]=(tr[l]+(mid-s+1)*tag[id])%M;
+        tr[r]=(tr[r]+(t-mid)*tag[id])%M;
+        tag[id]=0;
+    }
+    return ;
+}
+
+void build(ll id,ll s,ll t){
+    mul[id]=1;
+    if (s==t){
+        tr[id]=a[s];
+        return ;
+    }
+    ll mid=s+t>>1;
+    build(id<<1,s,mid);
+    build(id<<1|1,mid+1,t);
+    tr[id]=(tr[id<<1]+tr[id<<1|1])%M;
+    return ;
+}
+
+void add(ll id,ll l,ll r,ll s,ll t,ll c){
+    if (l<=s&&t<=r){
+        tr[id]=(tr[id]+(t-s+1)*c)%M;
+        tag[id]=(tag[id]+c)%M;
+        return ;
+    }
+    pd(id,s,t);
+    ll mid=s+t>>1;
+    if (l<=mid) add(id<<1,l,r,s,mid,c);
+    if (r>mid) add(id<<1|1,l,r,mid+1,t,c);
+    tr[id]=(tr[id<<1]+tr[id<<1|1])%M;
+    return ;
+}
+
+void times(ll id,ll l,ll r,ll s,ll t,ll c){
+    if (l<=s&&t<=r){
+        mul[id]=(mul[id]*c)%M;
+        tag[id]=(tag[id]*c)%M;
+        tr[id]=(tr[id]*c)%M;
+        return ;
+    }
+    pd(id,s,t);
+    ll mid=s+t>>1;
+    if (l<=mid) times(id<<1,l,r,s,mid,c);
+    if (r>mid) times(id<<1|1,l,r,mid+1,t,c);;
+    tr[id]=(tr[id<<1]+tr[id<<1|1])%M;
+}
+
+ll getsum(ll id,ll l,ll r,ll s,ll t){
+    if (l<=s&&t<=r){
+        return tr[id];
+    }
+    pd(id,s,t);
+    ll mid=s+t>>1;
+    ll sum=0;
+    if (l<=mid) sum+=getsum(id<<1,l,r,s,mid);
+    if (r>mid) sum+=getsum(id<<1|1,l,r,mid+1,t);
+    tr[id]=(tr[id<<1]+tr[id<<1|1])%M;
+    return sum%M;
+}
+
+int main(){
+	scanf("%lld%lld%lld",&n,&q,&M);
+	for (int i=1;i<=n;i++) scanf("%lld",&a[i]);
+	build(1,1,n);
+	while (q--){
+		ll t,x,y,k;
+		scanf("%lld%lld%lld",&t,&x,&y);
+		if (t==1){
+			scanf("%lld",&k);
+			times(1,x,y,1,n,k);
+		}
+		else if (t==2){
+			scanf("%lld",&k);
+			add(1,x,y,1,n,k);
+		}
+		else {
+			printf("%lld\n",getsum(1,x,y,1,n));
+		}
+	}
+	return 0;
+}
+
+```
 
 ## 数学
 
