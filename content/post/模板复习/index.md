@@ -528,6 +528,157 @@ int main(){
 
 ```
 
+### 线段树二分
+
+``` {class="code-closed"}
+```
+
+### 树链剖分
+
+[P3384 【模板】重链剖分 / 树链剖分](https://www.luogu.com.cn/problem/P3384)
+
+``` {class="code-closed"}
+#include<cstdio>
+#include<vector>
+#include<algorithm>
+using namespace std;
+
+typedef long long ll;
+const int N=1e5+5;
+ll n,q,r,P;
+ll a[N];
+vector<ll> g[N];
+ll dfn[N],dep[N],siz[N],son[N],fa[N],top[N],rnk[N],viscnt;
+ll tr[N<<2],tag[N<<2];
+
+void dfs1(ll u,ll f){
+    siz[u]=1;
+    fa[u]=f;
+    dep[u]=dep[f]+1;
+    for (ll v:g[u]){
+        if (v==f) continue;
+        dfs1(v,u);
+        siz[u]+=siz[v];
+        if (siz[v]>siz[son[u]]) son[u]=v;
+    }
+}
+
+void dfs2(ll u,ll t){
+    top[u]=t;
+    dfn[u]=++viscnt;
+    rnk[viscnt]=u;
+    if (son[u]) {
+        dfs2(son[u],t);
+        for (ll v:g[u]){
+            if (v==fa[u]||v==son[u]) continue;
+            dfs2(v,v);
+        }
+    }
+}
+
+void build(ll id,ll s,ll t){
+    if (s==t) {
+        tr[id]=a[rnk[s]];
+        return ;
+    }
+    ll mid=s+t>>1;
+    build(id<<1,s,mid);
+    build(id<<1|1,mid+1,t);
+    tr[id]=(tr[id<<1]+tr[id<<1|1])%P;
+}
+
+void pd(ll id,ll s,ll t){
+    ll mid=s+t>>1;
+    ll l=id<<1,r=id<<1|1,c=tag[id];
+    tr[l]=(tr[l]+c*(mid-s+1))%P;
+    tr[r]=(tr[r]+c*(t-mid))%P;
+    tag[l]=(tag[l]+c)%P;
+    tag[r]=(tag[r]+c)%P;
+    tag[id]=0;
+}
+
+void update(ll id,ll s,ll t,ll l,ll r,ll c){
+    if (l<=s&&t<=r){
+        tr[id]=(tr[id]+c*(t-s+1))%P;
+        tag[id]=(tag[id]+c)%P;
+        return ;
+    }
+    pd(id,s,t);
+    ll mid=s+t>>1;
+    if (l<=mid) update(id<<1,s,mid,l,r,c);
+    if (r>mid) update(id<<1|1,mid+1,t,l,r,c);
+    tr[id]=(tr[id<<1]+tr[id<<1|1])%P;
+}
+
+ll query(ll id,ll s,ll t,ll l,ll r){
+    if (l<=s&&t<=r) return tr[id]%P;
+    pd(id,s,t);
+    ll mid=s+t>>1,res=0;
+    if (l<=mid) res=(res+query(id<<1,s,mid,l,r))%P;
+    if (r>mid) res=(res+query(id<<1|1,mid+1,t,l,r))%P;
+    return res%P;
+}
+
+void pre_update(ll x,ll y,ll z){
+    while (top[x]!=top[y]){
+        if (dep[top[x]]<dep[top[y]]) swap(x,y);
+        update(1,1,n,dfn[top[x]],dfn[x],z);
+        x=fa[top[x]];
+    }
+    update(1,1,n,min(dfn[x],dfn[y]),max(dfn[x],dfn[y]),z);
+}
+
+ll pre_query(ll x,ll y){
+    ll res=0;
+    while (top[x]!=top[y]){
+        if (dep[top[x]]<dep[top[y]]) swap(x,y);
+        res=(res+query(1,1,n,dfn[top[x]],dfn[x]))%P;
+        x=fa[top[x]];
+    }
+    res=(res+query(1,1,n,min(dfn[x],dfn[y]),max(dfn[x],dfn[y])))%P;
+    return res;
+}
+
+int main(){
+    scanf("%lld%lld%lld%lld",&n,&q,&r,&P);
+    for (int i=1;i<=n;i++) scanf("%lld",&a[i]);
+    for (int i=1;i<n;i++) {
+        ll u,v;
+        scanf("%lld%lld",&u,&v);
+        g[u].push_back(v);
+        g[v].push_back(u);
+    }
+    dfs1(r,0);
+    dfs2(r,r);
+    build(1,1,n);
+    while (q--){
+        ll opt;
+        scanf("%lld",&opt);
+        if (opt==1){
+            ll x,y,z;
+            scanf("%lld%lld%lld",&x,&y,&z);
+            pre_update(x,y,z);
+        }
+        else if(opt==2){
+            ll x,y;
+            scanf("%lld%lld",&x,&y);
+            printf("%lld\n",pre_query(x,y)%P);
+        }
+        else if (opt==3){
+            ll x,z;
+            scanf("%lld%lld",&x,&z);
+            update(1,1,n,dfn[x],dfn[x]+siz[x]-1,z);
+        }
+        else{
+            ll x;
+            scanf("%lld",&x);
+            printf("%lld\n",query(1,1,n,dfn[x],dfn[x]+siz[x]-1)%P);
+        }
+    }
+    return 0;
+}
+```
+
 ## 数学
 
 ## 字符串
