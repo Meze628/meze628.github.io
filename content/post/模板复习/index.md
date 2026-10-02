@@ -171,6 +171,39 @@ int main(){
 ```cpp {class="code-closed"}
 ```
 
+### 并查集
+
+[P3367 【模板】并查集](https://www.luogu.com.cn/problem/P3367)
+
+```cpp {class="code-closed"}
+#include<bits/stdc++.h>
+using namespace std;
+
+typedef long long ll;
+const int N=2e5+5;
+ll n,m,p[N];
+
+ll find(ll x){
+    if (p[x]!=x) p[x]=find(p[x]);
+    return p[x];
+}
+
+int main(){
+    scanf("%lld%lld",&n,&m);
+    for (int i=1;i<=n;i++) p[i]=i;
+    for (int i=1;i<=m;i++) {
+        ll z,x,y;
+        scanf("%lld%lld%lld",&z,&x,&y);
+        if (z==1) p[find(x)]=find(y);
+        if (z==2){
+            if (p[find(x)]==p[find(y)]) puts("Y");
+            else puts("N");
+        }
+    }
+    return 0;
+}
+```
+
 ### 强连通分量
 
 [[图论与代数结构 701] 强连通分量](https://www.luogu.com.cn/problem/B3609)
@@ -382,38 +415,7 @@ int main(){
 
 ## 数据结构
 
-### 并查集
 
-[P3367 【模板】并查集](https://www.luogu.com.cn/problem/P3367)
-
-```cpp {class="code-closed"}
-#include<bits/stdc++.h>
-using namespace std;
-
-typedef long long ll;
-const int N=2e5+5;
-ll n,m,p[N];
-
-ll find(ll x){
-    if (p[x]!=x) p[x]=find(p[x]);
-    return p[x];
-}
-
-int main(){
-    scanf("%lld%lld",&n,&m);
-    for (int i=1;i<=n;i++) p[i]=i;
-    for (int i=1;i<=m;i++) {
-        ll z,x,y;
-        scanf("%lld%lld%lld",&z,&x,&y);
-        if (z==1) p[find(x)]=find(y);
-        if (z==2){
-            if (p[find(x)]==p[find(y)]) puts("Y");
-            else puts("N");
-        }
-    }
-    return 0;
-}
-```
 
 ## 数学
 
