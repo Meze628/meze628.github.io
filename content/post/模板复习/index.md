@@ -669,7 +669,46 @@ int main(){
 [CF91B Queue](https://codeforces.com/problemset/problem/91/B)
 
 ```cpp {class="code-closed"}
+#include<bits/stdc++.h>
+using namespace std;
 
+typedef long long ll;
+const int N=1e5+5;
+ll n,a[N];
+ll tr[N<<2];
+
+void build(ll id,ll s,ll t){
+    if (s==t){
+        tr[id]=a[s];
+        return ;
+    }
+    ll mid=s+t>>1;
+    build(id<<1,s,mid);
+    build(id<<1|1,mid+1,t);
+    tr[id]=min(tr[id<<1],tr[id<<1|1]);
+}
+
+ll query(ll id,ll l,ll r,ll s,ll t,ll c){
+    if (l>r) return 0;
+    if (s==t) return s-l+1;
+    ll mid=s+t>>1;
+    if (tr[id<<1|1]<c&&r>mid) return query(id<<1|1,l,r,mid+1,t,c);
+    else if(tr[id<<1]<c&&l<=mid) return query(id<<1,l,r,s,mid,c);
+    else return 0;
+}
+
+int main(){
+    scanf("%lld",&n);
+    for (int i=1;i<=n;i++){
+        scanf("%lld",&a[i]);
+    }
+    memset(tr,0x3f,sizeof tr);
+    build(1,1,n);
+    for (int i=1;i<=n;i++){
+        printf("%lld ",query(1,i+1,n,1,n,a[i])-1);
+    }
+    return 0;
+}
 ```
 
 ### 可持久化线段树
@@ -891,12 +930,77 @@ int main(){
 
 ### GCD
 
+```cpp {class="code-closed"}
+ll gcd(ll a,ll b){
+    while (b){
+        ll t=a;
+        a=b;
+        b=t%b;
+    }
+    return a;
+}
+```
+
 ### 线性筛
 
+[【模板】线性筛素数](https://www.luogu.com.cn/problem/P3383)
+
+```cpp {class="code-closed"}
+#include<bits/stdc++.h>
+using namespace std;
+
+typedef long long ll;
+const int N=1e8+5;
+const int M=1e7+10;
+int n,q;
+int prime[M],notprime[N],cnt;
+
+int main(){
+    scanf("%d%d",&n,&q);
+    for (int i=2;i<=n;i++){
+        if (!notprime[i]) prime[++cnt]=i;
+        for (int j=1;j<=cnt&&prime[j]*i<=N-5;j++){
+            notprime[prime[j]*i]=1;
+            if (i%prime[j]==0) break;
+        }
+    }
+    while (q--){
+        int k;
+        scanf("%d",&k);
+        printf("%d\n",prime[k]);
+    }
+    return 0;
+}
+```
+
 ### 扩展欧几里得
+
+```cpp {class="code-closed"}
+
+```
 
 ## 字符串
 
 ## 其他
 
 ### 二分答案
+
+#### 模板一（找到第一个满足条件的）
+
+```cpp {class="code-closed"}
+while (l<r){
+    ll mid=l+r>>1;
+    if (check(mid)) r=mid
+    else l=mid+1;
+}
+```
+
+#### 模板二（找到最后一个满足条件的）
+
+```cpp {class="code-closed"}
+while (l<r){
+    ll mid=l+r+1>>1;
+    if (check(mid)) l=mid
+    else r=mid-1;
+}
+```
