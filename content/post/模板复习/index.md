@@ -168,6 +168,50 @@ int main(){
 #### prim
 
 ```cpp {class="code-closed"}
+#include<bits/stdc++.h>
+using namespace std;
+
+typedef long long ll;
+const int N=1e4+5;
+ll n,m,cnt,ans;
+ll vis[N];
+struct edge{
+    ll v,w;
+};
+vector<edge> g[N]; 
+struct node{
+    ll u,dis;
+    bool operator>(const node &b) const{
+        return b.dis<dis;
+    }
+};
+priority_queue<node,vector<node>,greater<node>> q;
+
+int main(){
+    scanf("%lld%lld",&n,&m);
+    for (int i=1;i<=m;i++){
+        ll u,v,w;
+        scanf("%lld%lld%lld",&u,&v,&w);
+        g[u].push_back((edge){v,w});
+        g[v].push_back((edge){u,w});
+    }
+    q.push((node){1,0});
+    while (!q.empty()&&cnt<n){
+        ll u=q.top().u,w=q.top().dis;
+        q.pop();
+        if (vis[u]) continue;
+        vis[u]=1;
+        ans+=w;
+        cnt++;
+        for (edge ed:g[u]){
+            ll v=ed.v,w=ed.w;
+            if (!vis[v]) q.push((node){v,w});
+        }
+    }
+    if (cnt==n) printf("%lld\n",ans);
+    else puts("orz");
+    return 0;
+}
 ```
 
 ### 并查集
@@ -266,6 +310,16 @@ int main(){
     return 0;
 }
 ```
+
+### 二分图
+
+#### 染色判断二分图
+
+#### 匈牙利算法
+
+### 桥、边双连通分量
+
+### 割点、点双连通分量
 
 ### 网络流
 
@@ -532,6 +586,8 @@ int main(){
 ``` {class="code-closed"}
 ```
 
+### 可持久化线段树
+
 ### 树链剖分
 
 [P3384 【模板】重链剖分 / 树链剖分](https://www.luogu.com.cn/problem/P3384)
@@ -680,6 +736,14 @@ int main(){
 
 ## 数学
 
+### GCD
+
+### 线性筛
+
+### 扩展欧几里得
+
 ## 字符串
 
 ## 其他
+
+### 二分
