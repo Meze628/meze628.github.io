@@ -13,7 +13,7 @@ categories:
 
 #### dijkstra
 
-[P4779 【模板】单源最短路径（标准版）](https://www.luogu.com.cn/problem/P4779)
+[【模板】单源最短路径（标准版）](https://www.luogu.com.cn/problem/P4779)
 
 ```cpp {class="code-closed"}
 #include<bits/stdc++.h>
@@ -71,7 +71,7 @@ int main(){
 
 #### spfa
 
-[P3371 【模板】单源最短路径（弱化版）](https://www.luogu.com.cn/problem/P3371)
+[【模板】单源最短路径（弱化版）](https://www.luogu.com.cn/problem/P3371)
 
 ```cpp {class="code-closed"}
 #include<bits/stdc++.h>
@@ -122,7 +122,7 @@ int main(){
 
 ### 最小生成树
 
-[P3366 【模板】最小生成树](https://www.luogu.com.cn/problem/P3366)
+[【模板】最小生成树](https://www.luogu.com.cn/problem/P3366)
 
 #### Kruskal
 
@@ -216,7 +216,7 @@ int main(){
 
 ### 并查集
 
-[P3367 【模板】并查集](https://www.luogu.com.cn/problem/P3367)
+[【模板】并查集](https://www.luogu.com.cn/problem/P3367)
 
 ```cpp {class="code-closed"}
 #include<bits/stdc++.h>
@@ -313,9 +313,92 @@ int main(){
 
 ### 二分图
 
-#### 染色判断二分图
+#### 二分图判断
 
-#### 匈牙利算法
+[[ABC327D] Good Tuple Problem](https://atcoder.jp/contests/abc327/tasks/abc327_d)
+
+```cpp {class="code-closed"}
+#include<bits/stdc++.h>
+using namespace std;
+
+typedef long long ll;
+const int N=2e5+5;
+ll n,m,a[N],notb,color[N],vis[N];
+vector<ll> g[N];
+
+void dfs(ll u){
+    vis[u]=1;
+    for (ll v:g[u]){
+        if (vis[v]){
+            if (color[v]==color[u]) notb=1;
+        }
+        else {
+            color[v]=color[u]^1;
+            dfs(v);
+        }
+    }
+}
+
+int main(){
+    scanf("%lld%lld",&n,&m);
+    for (int i=1;i<=m;i++) scanf("%lld",&a[i]);
+    for (int i=1;i<=m;i++){
+        ll v;
+        scanf("%lld",&v);
+        g[a[i]].push_back(v);
+        g[v].push_back(a[i]);
+    }
+    for (int i=1;i<=n;i++){
+        if (!vis[i]) dfs(i);
+    }
+    if (notb) puts("No");
+    else puts("Yes");
+    return 0;
+}
+```
+
+#### 二分图最大匹配（匈牙利算法）
+
+[【模板】二分图最大匹配](https://www.luogu.com.cn/problem/P3386)
+
+```cpp {class="code-closed"}
+#include<bits/stdc++.h>
+using namespace std;
+
+typedef long long ll;
+const int N=5e2+5;
+ll n,m,e,ans;
+ll vis[N],match[N];
+vector<ll> g[N];
+
+ll find(ll u){
+    for (ll v:g[u]){
+        if (!vis[v]){
+            vis[v]=1;
+            if (!match[v]||find(match[v])){
+                match[v]=u;
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+int main(){
+    scanf("%lld%lld%lld",&n,&m,&e);
+    for (int i=1;i<=e;i++) {
+        ll u,v;
+        scanf("%lld%lld",&u,&v);
+        g[u].push_back(v);
+    }
+    for (int i=1;i<=n;i++) {
+        memset(vis,0,sizeof vis);
+        ans+=find(i);
+    }
+    printf("%lld\n",ans);
+    return 0;
+}
+```
 
 ### 桥、边双连通分量
 
@@ -583,16 +666,86 @@ int main(){
 
 ### 线段树二分
 
-``` {class="code-closed"}
+[CF91B Queue](https://codeforces.com/problemset/problem/91/B)
+
+```cpp {class="code-closed"}
+
 ```
 
 ### 可持久化线段树
+
+[【模板】可持久化线段树 1（可持久化数组）](https://www.luogu.com.cn/problem/P3919)
+
+```cpp {class="code-closed"}
+#include<cstdio>
+using namespace std;
+
+typedef long long ll;
+const int N=1e6+5;
+ll n,m;
+ll tot;
+ll a[N],rt[N],ls[N<<5],rs[N<<5];
+
+ll build(ll s,ll t){
+	ll id=++tot;
+	if (s==t){
+		ls[id]=a[s];
+		rs[id]=a[s];
+		return id;
+	}
+	ll mid=s+t>>1;
+	ls[id]=build(s,mid);
+	rs[id]=build(mid+1,t);
+	return id;
+}
+
+ll update(ll pre,ll s,ll t,ll p,ll c){
+	if (!p) return pre;
+	ll id=++tot;
+	ls[id]=ls[pre],rs[id]=rs[pre];
+	if (s==t){
+		ls[id]=c;
+		rs[id]=c;
+		return id;
+	}
+	ll mid=s+t>>1;
+	if (p<=mid) ls[id]=update(ls[pre],s,mid,p,c);
+	else rs[id]=update(rs[pre],mid+1,t,p,c);
+	return id;
+}
+
+ll query(ll pre,ll s,ll t,ll p){
+	if (s==t) return ls[pre];
+	ll mid=s+t>>1;
+	if (p<=mid) return query(ls[pre],s,mid,p);
+	else return query(rs[pre],mid+1,t,p);
+}
+
+int main(){
+	scanf("%lld%lld",&n,&m);
+	for (int i=1;i<=n;i++) scanf("%lld",&a[i]);
+	rt[0]=build(1,n);
+	for (int i=1;i<=m;i++){
+		ll v,opt,p,c;
+		scanf("%lld%lld%lld",&v,&opt,&p);
+		if (opt==1){
+			scanf("%lld",&c);
+			rt[i]=update(rt[v],1,n,p,c);
+		}
+		else {
+			rt[i]=update(rt[v],1,n,0,0);
+			ll res=query(rt[v],1,n,p);
+			printf("%lld\n",res);
+		}
+	}
+}
+```
 
 ### 树链剖分
 
 [P3384 【模板】重链剖分 / 树链剖分](https://www.luogu.com.cn/problem/P3384)
 
-``` {class="code-closed"}
+```cpp {class="code-closed"}
 #include<cstdio>
 #include<vector>
 #include<algorithm>
@@ -746,4 +899,4 @@ int main(){
 
 ## 其他
 
-### 二分
+### 二分答案
