@@ -1,12 +1,12 @@
 {{ define "main" }}
 <link rel="stylesheet" href="{{ "tools-assets/tools.css" | relURL }}">
-<section class="tools-shell tools-home" aria-label="工具">
-  <div class="tools-category article-entry" {{ if .Site.Params.animation.enable }}data-aos="{{ .Site.Params.animation.options.home.post }}"{{ end }}><h2>文字处理工具</h2></div>
+<section class="tools-shell tools-home" aria-label="工具" {{ if .Site.Params.animation.enable }}data-aos="{{ .Site.Params.animation.options.home.post }}"{{ end }}>
+  <div class="tools-category article-entry"><h2>文字处理工具</h2></div>
   <div class="tools-cards">
-    <div class="tool-card-entrance" {{ if .Site.Params.animation.enable }}data-aos="{{ .Site.Params.animation.options.home.post }}"{{ end }}>
+    <div class="tool-card-entrance">
       <a class="tool-card" href="{{ "tools/latex/" | relURL }}"><span class="tool-card-symbol" aria-hidden="true">∑</span><h3>LaTeX 格式转换</h3><span class="tool-card-arrow" aria-hidden="true">{{ partial "tools/icon.html" "arrow-right" }}</span></a>
     </div>
-    <div class="tool-card-entrance" {{ if .Site.Params.animation.enable }}data-aos="{{ .Site.Params.animation.options.home.post }}"{{ end }}>
+    <div class="tool-card-entrance">
       <a class="tool-card" href="{{ "tools/markdown/" | relURL }}"><span class="tool-card-symbol tool-card-md" aria-hidden="true">M↓</span><h3>Markdown 预览</h3><span class="tool-card-arrow" aria-hidden="true">{{ partial "tools/icon.html" "arrow-right" }}</span></a>
     </div>
   </div>
