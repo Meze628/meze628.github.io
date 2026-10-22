@@ -7,8 +7,8 @@ Template for [hugo-theme-reimu](https://github.com/D-Sketon/hugo-theme-reimu)
 ## Usage
 
 ```bash
-git clone https://github.com/D-Sketon/hugo-reimu-template --recursive
-cd hugo-reimu-template
+git clone https://github.com/Meze628/meze628.github.io --recursive
+cd meze628.github.io
 hugo serve
 ```
 
