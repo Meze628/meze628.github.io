@@ -1,0 +1,21 @@
+<section class="pdf-settings" id="pdf-settings" aria-label="PDF 排版设置" hidden>
+  <div class="settings-heading"><h2>PDF 排版</h2><button type="button" class="tool-icon-button" data-action="reset-settings">恢复默认</button></div>
+  <div class="settings-grid">
+    <label>正文字体<select data-setting="font"><option value="sans">思源黑体 · 简洁</option><option value="serif">思源宋体 · 阅读</option><option value="custom">导入字体文件…</option></select></label>
+    <label>正文字号 <span>pt</span><input type="number" data-setting="fontSize" min="8" max="28" step="0.5" value="12"></label>
+    <label>行间距 <span>倍</span><input type="number" data-setting="lineHeight" min="1" max="3" step="0.05" value="1.65"></label>
+    <label>段后间距 <span>pt</span><input type="number" data-setting="paragraphGap" min="0" max="40" step="1" value="7"></label>
+    <label>标题大小 <span>倍</span><input type="number" data-setting="headingScale" min="0.75" max="1.8" step="0.05" value="1"></label>
+    <label>代码字号 <span>pt</span><input type="number" data-setting="codeFontSize" min="6" max="22" step="0.5" value="10"></label>
+    <label>纸张<select data-setting="paper"><option value="A4">A4</option><option value="A5">A5</option><option value="LETTER">Letter</option></select></label>
+    <label>方向<select data-setting="orientation"><option value="portrait">纵向</option><option value="landscape">横向</option></select></label>
+    <label>上边距 <span>mm</span><input type="number" data-setting="marginTop" min="8" max="50" step="1" value="20"></label>
+    <label>下边距 <span>mm</span><input type="number" data-setting="marginBottom" min="8" max="50" step="1" value="20"></label>
+    <label>左边距 <span>mm</span><input type="number" data-setting="marginLeft" min="8" max="50" step="1" value="20"></label>
+    <label>右边距 <span>mm</span><input type="number" data-setting="marginRight" min="8" max="50" step="1" value="20"></label>
+    <label class="settings-wide">页眉文字 <span>可留空</span><input type="text" data-setting="header" maxlength="120" placeholder="例如：Meze's Blog"></label>
+    <label class="settings-checkbox"><input type="checkbox" data-setting="pageNumbers" checked> 显示页码</label>
+  </div>
+  <div class="custom-font-control" hidden><label for="custom-font-file">导入 .ttf / .otf 字体</label><input type="file" id="custom-font-file" accept=".ttf,.otf"><span data-font-name>字体仅用于当前会话。</span></div>
+  <p class="settings-note">PDF 使用白纸深色字；公式按正文大小排版，代码字号独立设置。</p>
+</section>

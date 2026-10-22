@@ -1,0 +1,11 @@
+{{ define "main" }}
+<link rel="stylesheet" href="{{ "tools-assets/tools.css" | relURL }}">
+<section class="tools-shell tools-home" aria-label="工具箱">
+  <div class="tools-intro"><span class="tools-eyebrow">MEZE'S TOOLBOX</span><h2>让写作顺手一点。</h2><p>处理公式，整理文稿，带走一份排版好的 PDF。</p></div>
+  <div class="tools-cards">
+    <a class="tool-card" href="{{ "tools/latex/" | relURL }}"><span class="tool-card-symbol" aria-hidden="true">∑</span><span class="tool-card-copy"><h3>LaTeX 格式转换</h3><p>在 <code>\( … \)</code> 与 <code>$ … $</code> 之间转换，自动跳过代码。</p><span class="tool-card-action">转换公式 <span aria-hidden="true">→</span></span></span></a>
+    <a class="tool-card" href="{{ "tools/markdown/" | relURL }}"><span class="tool-card-symbol tool-card-md" aria-hidden="true">M↓</span><span class="tool-card-copy"><h3>Markdown & PDF</h3><p>实时预览文字与公式，自定义字号、行距，直接下载 PDF。</p><span class="tool-card-action">开始写作 <span aria-hidden="true">→</span></span></span></a>
+  </div>
+  <p class="tools-local-note"><span aria-hidden="true">◉</span> 文稿在浏览器本地处理，无需登录。</p>
+</section>
+{{ end }}

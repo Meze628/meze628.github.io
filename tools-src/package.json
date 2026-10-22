@@ -1,0 +1,23 @@
+{
+  "name": "meze-blog-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "buffer": "6.0.3",
+    "dompurify": "3.4.17",
+    "highlight.js": "11.12.0",
+    "katex": "0.19.0",
+    "marked": "18.1.1",
+    "mathjax-full": "3.2.2",
+    "pdfjs-dist": "5.4.624",
+    "pdfkit": "0.20.2",
+    "svg-to-pdfkit": "0.1.8"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

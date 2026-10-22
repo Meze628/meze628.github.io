@@ -2,3 +2,6 @@
 
 /public
 /resources
+
+# Local authoring dependencies; browser bundles are checked in.
+/tools-src/node_modules/

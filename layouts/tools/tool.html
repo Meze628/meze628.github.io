@@ -1,0 +1,41 @@
+{{ define "main" }}
+<link rel="stylesheet" href="{{ "tools-assets/katex.min.css" | relURL }}">
+<link rel="stylesheet" href="{{ "tools-assets/tools.css" | relURL }}">
+<section class="tools-shell" data-meze-tool="{{ .Params.tool }}" aria-label="{{ .Title }}">
+  <header class="tool-heading">
+    <nav class="tools-breadcrumb" aria-label="工具导航"><a href="{{ "tools/" | relURL }}">工具箱</a><span aria-hidden="true">/</span><span>{{ .Title }}</span></nav>
+    <a class="tools-sibling" href="{{ if eq .Params.tool "latex" }}{{ "tools/markdown/" | relURL }}{{ else }}{{ "tools/latex/" | relURL }}{{ end }}">{{ if eq .Params.tool "latex" }}Markdown & PDF{{ else }}LaTeX 格式转换{{ end }} <span aria-hidden="true">↗</span></a>
+  </header>
+  {{ if eq .Params.tool "latex" }}
+  <div class="tool-toolbar">
+    <div class="direction-switch" role="group" aria-label="转换方向">
+      <button class="tool-button is-active" type="button" data-direction="dollar" aria-pressed="true"><code>\( … \)</code><span aria-hidden="true">→</span><code>$ … $</code></button>
+      <button class="tool-button" type="button" data-direction="bracket" aria-pressed="false"><code>$ … $</code><span aria-hidden="true">→</span><code>\( … \)</code></button>
+    </div>
+    <div class="toolbar-actions"><button type="button" class="tool-button" data-action="example">载入示例</button><button type="button" class="tool-button" data-action="import">导入文稿</button><button type="button" class="tool-button tool-button-muted" data-action="clear">清空</button></div>
+  </div>
+  <div class="conversion-options"><label><input type="checkbox" id="include-display" checked> 同时转换块级公式 <code>\[ … \]</code> / <code>$$ … $$</code></label><label><input type="checkbox" id="protect-code" checked> 跳过代码</label><label><input type="checkbox" id="auto-convert" checked> 实时转换</label><button type="button" class="tool-button tool-button-small" data-action="convert">立即转换</button></div>
+  <div class="tool-workspace latex-workspace">
+    <section class="tool-pane"><div class="pane-heading"><label for="tool-source">原始文稿</label><span class="pane-meta" data-source-count></span></div><textarea id="tool-source" class="tool-editor" spellcheck="false" placeholder="在这里粘贴含数学公式的 Markdown…" aria-describedby="conversion-help"></textarea></section>
+    <section class="tool-pane"><div class="pane-heading"><label for="tool-result">转换结果</label><div class="pane-actions"><button type="button" class="tool-icon-button" data-action="use-result" title="将结果作为输入">用作输入</button><button type="button" class="tool-icon-button" data-action="copy">复制</button><button type="button" class="tool-icon-button" data-action="download-text">下载</button></div></div><textarea id="tool-result" class="tool-editor" readonly spellcheck="false" placeholder="转换结果会显示在这里…"></textarea></section>
+  </div>
+  <div class="tool-footnote"><p id="conversion-help">只替换公式分隔符，保留其余 Markdown。代码、转义符号与未闭合公式按原文保留。</p><p data-conversion-stats></p></div>
+  {{ else }}
+  <div class="tool-toolbar">
+    <div class="document-name"><label for="document-name">文稿名</label><input type="text" id="document-name" value="Markdown 文稿" maxlength="100" autocomplete="off"></div>
+    <div class="toolbar-actions"><button type="button" class="tool-button" data-action="example">示例</button><button type="button" class="tool-button" data-action="import">导入</button><button type="button" class="tool-button" data-action="insert-image">插入图片</button><button type="button" class="tool-button" data-action="download-text">保存 .md</button><button type="button" class="tool-button" data-action="settings" aria-expanded="false" aria-controls="pdf-settings">PDF 设置</button><button type="button" class="tool-button tool-button-primary" data-action="download-pdf"><span aria-hidden="true">↓</span> 下载 PDF</button></div>
+  </div>
+  {{ partial "tools/pdf-settings.html" . }}
+  <div class="tool-workspace markdown-workspace">
+    <section class="tool-pane source-pane"><div class="pane-heading"><label for="tool-source">Markdown 源码</label><div class="pane-actions"><span class="pane-meta" data-source-count></span><button class="tool-icon-button" type="button" data-action="clear">清空</button></div></div><textarea id="tool-source" class="tool-editor" spellcheck="false" placeholder="开始写作，或者拖入一个 .md 文件…" aria-label="Markdown 源码"></textarea><div class="editor-hint">支持 <code>$…$</code>、<code>\(…\)</code>、<code>$$…$$</code> 与 <code>\[…\]</code><span>Tab 缩进</span></div></section>
+    <section class="tool-pane preview-pane"><div class="pane-heading"><div class="preview-tabs" role="tablist" aria-label="预览类型"><button class="preview-tab is-active" type="button" id="tab-markdown" role="tab" aria-selected="true" aria-controls="markdown-preview" data-view="markdown">Markdown 预览</button><button class="preview-tab" type="button" id="tab-pdf" role="tab" aria-selected="false" aria-controls="pdf-preview" data-view="pdf" tabindex="-1">PDF 预览</button></div><button class="tool-icon-button" type="button" data-action="refresh-pdf" hidden>更新预览</button></div><div id="markdown-preview" class="md-preview article-entry" role="tabpanel" aria-labelledby="tab-markdown"></div><div id="pdf-preview" class="pdf-preview" role="tabpanel" aria-labelledby="tab-pdf" hidden><div class="pdf-placeholder"><span class="pdf-paper-icon" aria-hidden="true">PDF</span><p>先看看纸上的效果。</p><span>字号、行距与分页都会体现在这里。</span><button class="tool-button tool-button-primary" type="button" data-action="generate-pdf">生成 PDF 预览</button></div><div class="pdf-pages" hidden></div><div class="pdf-stale" hidden>文稿或设置已更改<button type="button" class="tool-icon-button" data-action="refresh-pdf">更新 PDF</button></div></div></section>
+  </div>
+  <div class="tool-footnote"><p>文稿仅在本机处理；外链图片会连接原站。首次导出时会加载所选中文字体。</p><p>手动分页：<code>&lt;!-- pagebreak --&gt;</code><span class="draft-indicator" data-draft-state></span></p></div>
+  {{ end }}
+  <input type="file" data-file-input accept=".md,.markdown,.txt,text/markdown,text/plain" hidden>
+  <input type="file" data-image-input accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+  <div class="tool-status" role="status" aria-live="polite" data-status hidden></div>
+  <noscript><p class="tool-error">请启用 JavaScript 后使用这些工具。</p></noscript>
+</section>
+<script data-pjax>import('{{ "tools-assets/tools.js" | relURL }}').then(module => module.mountTools()).catch(() => { const el = document.querySelector('[data-status]'); if (el) { el.hidden = false; el.textContent = '工具未能加载，请刷新页面重试。'; } });</script>
+{{ end }}
