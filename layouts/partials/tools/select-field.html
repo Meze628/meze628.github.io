@@ -1,0 +1,12 @@
+<div class="setting-select" data-select-field>
+  <span id="setting-{{ .name }}-label">{{ .label }}</span>
+  <select data-setting="{{ .name }}" hidden aria-hidden="true" tabindex="-1">
+    {{ range .options }}<option value="{{ .value }}">{{ .label }}</option>{{ end }}
+  </select>
+  <button type="button" class="tool-select-trigger" role="combobox" aria-expanded="false" aria-haspopup="listbox" aria-controls="setting-{{ .name }}-options" aria-labelledby="setting-{{ .name }}-label setting-{{ .name }}-value">
+    <span id="setting-{{ .name }}-value" data-select-value>{{ (index .options 0).label }}</span><span class="tool-select-arrow" aria-hidden="true"></span>
+  </button>
+  <div id="setting-{{ .name }}-options" class="tool-select-menu" role="listbox" aria-labelledby="setting-{{ .name }}-label" popover="manual" hidden>
+    {{ $name := .name }}{{ range $index, $option := .options }}<button type="button" class="tool-select-option" id="setting-{{ $name }}-option-{{ $index }}" role="option" aria-selected="{{ if eq $index 0 }}true{{ else }}false{{ end }}" tabindex="-1" data-select-option="{{ $option.value }}">{{ $option.label }}</button>{{ end }}
+  </div>
+</div>

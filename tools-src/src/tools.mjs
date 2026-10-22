@@ -10,6 +10,7 @@ import css from 'highlight.js/lib/languages/css';
 import xml from 'highlight.js/lib/languages/xml';
 import {convertDelimiters, createMarkdown, escapeHtml, normalizeSettings, defaults} from './core.mjs';
 import {MARKDOWN_EXAMPLE, LATEX_EXAMPLE} from './examples.mjs';
+import {mountSelectFields} from './select-field.mjs';
 
 for (const [name, language] of Object.entries({cpp,python,javascript,json,bash,css,xml})) hljs.registerLanguage(name,language);
 const parser = createMarkdown((text, display) => {
@@ -41,6 +42,7 @@ export function mountTools() {
   const signal = controller.signal;
   const on = (target,event,callback) => target?.addEventListener(event,callback,{signal});
   const query = selector => root.querySelector(selector);
+  const selectFields = mountSelectFields(root, signal);
   const source = query('#tool-source');
   const kind = root.dataset.mezeTool;
   const storageKey = `meze.tools.${kind}.v1`;
@@ -53,6 +55,8 @@ export function mountTools() {
   let activeJob = null;
   let viewerUrl,viewerVersion=0,disposePdfViewer;
   let previousReplacement = null;
+  let fullscreen = false, previousScroll = 0;
+  let inertElements = [];
   const status = query('[data-status]');
 
   function notify(message, error = false, persistent = false) {
@@ -62,11 +66,8 @@ export function mountTools() {
   }
   function persist() {
     try {
-      localStorage.setItem(storageKey, JSON.stringify({source:source.value,direction,settings,includeDisplay:query('#include-display')?.checked,protectCode:query('#protect-code')?.checked}));
-      if (query('[data-draft-state]')) query('[data-draft-state]').textContent = '草稿已保存在本机';
-    } catch {
-      if (query('[data-draft-state]')) query('[data-draft-state]').textContent = '草稿较大，请下载 .md 保存';
-    }
+      localStorage.setItem(storageKey, JSON.stringify({source:source.value,direction,settings,protectCode:query('#protect-code')?.checked}));
+    } catch {}
   }
   function updateCount() { query('[data-source-count]').textContent = `${source.value.length.toLocaleString()} 字符`; }
   function markPdfStale() {
@@ -74,9 +75,8 @@ export function mountTools() {
     if (stale) stale.hidden = !pdfSnapshot || (pdfSnapshot.source === source.value && pdfSnapshot.settings === JSON.stringify(settings));
   }
   function updateConversion() {
-    const {text,stats} = convertDelimiters(source.value,direction,query('#include-display').checked,query('#protect-code').checked);
+    const {text} = convertDelimiters(source.value,direction,true,query('#protect-code').checked);
     query('#tool-result').value = text;
-    query('[data-conversion-stats]').textContent = `已转换 ${stats.inline} 处行内公式、${stats.display} 处块级公式${stats.unclosed ? `；${stats.unclosed} 处未闭合公式已保留` : ''}`;
     persist();
   }
   function updateMarkdown() {
@@ -93,11 +93,48 @@ export function mountTools() {
   }
   function handleInput(immediate = false) {
     updateCount(); markPdfStale(); clearTimeout(inputTimer);
-    if (kind === 'latex' && !query('#auto-convert').checked) { persist(); return; }
     if (immediate) kind === 'latex' ? updateConversion() : updateMarkdown();
     else inputTimer = setTimeout(() => kind === 'latex' ? updateConversion() : updateMarkdown(),180);
   }
   function replaceSource(value) { previousReplacement=source.value;source.value=value;handleInput(true); }
+
+  function setFullscreen(enabled) {
+    if (enabled === fullscreen) return;
+    selectFields.close();
+    fullscreen = enabled;
+    if (enabled) {
+      previousScroll = window.scrollY;
+      for (let node = root; node.parentElement && node !== document.body; node = node.parentElement) {
+        for (const sibling of node.parentElement.children) {
+          if (sibling !== node) {inertElements.push([sibling,sibling.inert]);sibling.inert = true;}
+        }
+      }
+      root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');
+    } else {
+      for (const [element,inert] of inertElements) element.inert = inert;
+      inertElements = [];
+      root.removeAttribute('role');root.removeAttribute('aria-modal');
+    }
+    root.classList.toggle('is-fullscreen',enabled);
+    document.body.classList.toggle('tools-editing',enabled);
+    const button = query('[data-action="fullscreen"]');
+    button.setAttribute('aria-pressed',String(enabled));
+    button.title = enabled ? '退出全屏（Esc）' : '全屏编辑（Esc 退出）';
+    query('[data-fullscreen-label]').textContent = enabled ? '退出全屏' : '全屏编辑';
+    query('[data-fullscreen-enter]').hidden = enabled;query('[data-fullscreen-exit]').hidden = !enabled;
+    if (enabled) source.focus({preventScroll:true});
+    else {if (root.isConnected) button.focus({preventScroll:true});window.scrollTo(0,previousScroll);}
+  }
+  on(document,'keydown',event => {
+    if (!fullscreen) return;
+    if (event.key === 'Escape') {event.preventDefault();setFullscreen(false);return;}
+    if (event.key !== 'Tab' || event.defaultPrevented) return;
+    const controls = [...root.querySelectorAll('a[href],button,input,select,textarea,[tabindex="0"]')].filter(element => !element.disabled && element.tabIndex >= 0 && element.getClientRects().length);
+    const first = controls[0],last = controls.at(-1);
+    if (event.shiftKey && document.activeElement === first) {event.preventDefault();last?.focus();}
+    else if (!event.shiftKey && document.activeElement === last) {event.preventDefault();first?.focus();}
+  });
+  on(window,'pagehide',()=>setFullscreen(false));
 
   source.value = typeof saved?.source === 'string' ? saved.source : (kind==='latex' ? LATEX_EXAMPLE : MARKDOWN_EXAMPLE).replaceAll('\\u0060','`');
   on(source,'input',() => handleInput());
@@ -132,7 +169,12 @@ export function mountTools() {
     for (const input of root.querySelectorAll('[data-setting]')) {
       const value=settings[input.dataset.setting];
       if (input.type==='checkbox') input.checked=value; else input.value=value;
+      if (input.type==='number') {
+        const field = input.closest('.tool-number-field');
+        if (field) {field.querySelector('[data-step="-1"]').disabled=Number(value)<=Number(input.min);field.querySelector('[data-step="1"]').disabled=Number(value)>=Number(input.max);}
+      }
     }
+    selectFields.sync();
     query('#document-name').value=settings.filename;
     query('.custom-font-control').hidden=settings.font!=='custom';
   }
@@ -148,12 +190,14 @@ export function mountTools() {
     if(!pdfUrl||viewerUrl===pdfUrl)return;
     const url=pdfUrl,current=++viewerVersion;viewerUrl=url;
     const host=query('.pdf-pages');host.hidden=false;query('.pdf-placeholder').hidden=true;
-    const module=await import(new URL('./pdf-viewer.js',import.meta.url).href);
-    const bytes=await(await fetch(url)).arrayBuffer();
-    if(!root.isConnected||current!==viewerVersion)return;
-    disposePdfViewer?.();
-    const dispose=await module.mountPdfViewer(host,bytes);
-    if(current!==viewerVersion||!root.isConnected)dispose();else disposePdfViewer=dispose;
+    try {
+      const module=await import(new URL('./pdf-viewer.js',import.meta.url).href);
+      const bytes=await(await fetch(url)).arrayBuffer();
+      if(!root.isConnected||current!==viewerVersion)return;
+      disposePdfViewer?.();disposePdfViewer=null;
+      const dispose=await module.mountPdfViewer(host,bytes);
+      if(current!==viewerVersion||!root.isConnected)dispose();else disposePdfViewer=dispose;
+    } catch (error) {if(current===viewerVersion)viewerUrl=null;throw error;}
   }
   function getWorker() {
     if (worker) return worker;
@@ -174,7 +218,7 @@ export function mountTools() {
       throw new Error('请先导入 .ttf 或 .otf 字体文件，或改用内置字体。');
     }
     const snapshot={source:source.value,settings:JSON.stringify(settings)};
-    if (pdfSnapshot && pdfSnapshot.source===snapshot.source && pdfSnapshot.settings===snapshot.settings && pdfUrl) return {url:pdfUrl};
+    if (pdfSnapshot && pdfSnapshot.source===snapshot.source && pdfSnapshot.settings===snapshot.settings && pdfUrl) return {url:pdfUrl,cached:true};
     if (pendingPdf) return pendingPdf;
     pendingPdf=(async () => {
       const engine=getWorker();
@@ -203,17 +247,35 @@ export function mountTools() {
         const anchor=Object.assign(document.createElement('a'),{href:result.url,download:name+'.pdf'});
         document.body.append(anchor);anchor.click();anchor.remove();
         if (!result.warnings?.length) notify('PDF 已准备好，正在下载');
-      } else setView('pdf');
+      } else {setView('pdf');if(result.cached)notify('PDF 预览已更新');}
       if (pdfSnapshot) markPdfStale();
     } catch (error) {notify(error.message,true);}
     finally {buttons.forEach(button=>button.disabled=false);root.removeAttribute('aria-busy');}
   }
 
+  async function openNativePdf() {
+    const popup=window.open('about:blank','_blank','popup,width=1100,height=850');
+    if (!popup) {notify('请允许此页面打开 PDF 预览窗口。',true);return;}
+    popup.opener=null;popup.document.title='PDF 预览';
+    try {
+      const result=await generatePdf();
+      if (!result || popup.closed) {if(!popup.closed)popup.close();return;}
+      popup.addEventListener('load',()=>{try{popup.focus();popup.print();}catch{}},{once:true});
+      popup.location.replace(result.url);
+    } catch(error) {popup.close();notify(error.message,true);}
+  }
+
   on(root,'click',event => {
+    const stepButton=event.target.closest('[data-step]');
+    if (stepButton) {
+      event.preventDefault();
+      const input=stepButton.closest('.tool-number-field').querySelector('input');
+      input.stepUp(Number(stepButton.dataset.step));input.dispatchEvent(new Event('change',{bubbles:true}));return;
+    }
     const directionButton=event.target.closest('[data-direction]');
     if (directionButton) {direction=directionButton.dataset.direction;for (const button of root.querySelectorAll('[data-direction]')) {const current=button===directionButton;button.classList.toggle('is-active',current);button.setAttribute('aria-pressed',String(current));}updateConversion();return;}
     const viewButton=event.target.closest('[data-view]');
-    if (viewButton) {setView(viewButton.dataset.view);return;}
+    if (viewButton) {setView(viewButton.dataset.view);if(viewButton.dataset.view==='pdf'&&!pdfUrl)runPdf(false);return;}
     const action=event.target.closest('[data-action]')?.dataset.action;
     if (action==='example') {replaceSource((kind==='latex'?LATEX_EXAMPLE:MARKDOWN_EXAMPLE).replaceAll('\\u0060','`'));notify('已载入示例');}
     if (action==='clear') {replaceSource('');source.focus();}
@@ -221,12 +283,12 @@ export function mountTools() {
     if (action==='insert-image') query('[data-image-input]').click();
     if (action==='copy') copyResult();
     if (action==='download-text') saveMarkdown();
-    if (action==='convert') updateConversion();
-    if (action==='use-result') {replaceSource(query('#tool-result').value);notify('结果已用作输入，可以切换转换方向');}
-    if (action==='settings') {const panel=query('#pdf-settings');panel.hidden=!panel.hidden;query('[data-action="settings"]').setAttribute('aria-expanded',String(!panel.hidden));}
+    if (action==='fullscreen') setFullscreen(!fullscreen);
+    if (action==='settings') {selectFields.close();const panel=query('#pdf-settings');panel.hidden=!panel.hidden;query('[data-action="settings"]').setAttribute('aria-expanded',String(!panel.hidden));}
     if (action==='reset-settings') {const name=settings.filename;settings={...defaults,filename:name};customFont=null;syncSettingsUI();persist();markPdfStale();notify('已恢复默认排版');}
     if (action==='download-pdf') runPdf(true);
-    if (action==='generate-pdf'||action==='refresh-pdf') runPdf(false);
+    if (action==='generate-pdf'||action==='refresh-pdf') {if(action==='refresh-pdf')viewerUrl=null;runPdf(false);}
+    if (action==='open-pdf') openNativePdf();
   });
   on(query('[data-file-input]'),'change',async event => {
     const file=event.target.files[0];if (!file) return;
@@ -255,9 +317,8 @@ export function mountTools() {
     } catch(error) {notify(error.message,true);}
   });
   if (kind==='latex') {
-    if(typeof saved?.includeDisplay==='boolean')query('#include-display').checked=saved.includeDisplay;
     if(typeof saved?.protectCode==='boolean')query('#protect-code').checked=saved.protectCode;
-    for(const input of root.querySelectorAll('.conversion-options input'))on(input,'change',()=>handleInput(true));
+    on(query('#protect-code'),'change',()=>handleInput(true));
     for(const button of root.querySelectorAll('[data-direction]')){const current=button.dataset.direction===direction;button.classList.toggle('is-active',current);button.setAttribute('aria-pressed',String(current));}
   } else {
     syncSettingsUI();
@@ -273,7 +334,7 @@ export function mountTools() {
     on(query('.preview-tabs'),'keydown',event=>{if(!['ArrowLeft','ArrowRight'].includes(event.key))return;event.preventDefault();const view=query('[data-view="markdown"]').getAttribute('aria-selected')==='true'?'pdf':'markdown';setView(view);query(`[data-view="${view}"]`).focus();});
   }
   handleInput(true);
-  disposeCurrent=()=>{persist();controller.abort();clearTimeout(statusTimer);clearTimeout(inputTimer);worker?.terminate();viewerVersion++;disposePdfViewer?.();if(pdfUrl)URL.revokeObjectURL(pdfUrl);};
+  disposeCurrent=()=>{selectFields.close();setFullscreen(false);persist();controller.abort();clearTimeout(statusTimer);clearTimeout(inputTimer);worker?.terminate();viewerVersion++;disposePdfViewer?.();if(pdfUrl)URL.revokeObjectURL(pdfUrl);};
 }
 
 document.addEventListener('pjax:complete',()=>{if(!document.querySelector('[data-meze-tool]')){disposeCurrent?.();disposeCurrent=null;}else mountTools();});
