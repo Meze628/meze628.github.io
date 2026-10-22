@@ -1,26 +1,19 @@
 import DOMPurify from 'dompurify';
 import katex from 'katex';
-import hljs from 'highlight.js/lib/core';
-import cpp from 'highlight.js/lib/languages/cpp';
-import python from 'highlight.js/lib/languages/python';
-import javascript from 'highlight.js/lib/languages/javascript';
-import json from 'highlight.js/lib/languages/json';
-import bash from 'highlight.js/lib/languages/bash';
-import css from 'highlight.js/lib/languages/css';
-import xml from 'highlight.js/lib/languages/xml';
 import {convertDelimiters, createMarkdown, escapeHtml, normalizeSettings, defaults} from './core.mjs';
 import {MARKDOWN_EXAMPLE, LATEX_EXAMPLE} from './examples.mjs';
 import {mountSelectFields} from './select-field.mjs';
+import {highlightCode} from './syntax.mjs';
+import {indexSource,sourceAttributes} from './source-map.mjs';
+import {mountScrollSync} from './scroll-sync.mjs';
 
-for (const [name, language] of Object.entries({cpp,python,javascript,json,bash,css,xml})) hljs.registerLanguage(name,language);
 const parser = createMarkdown((text, display) => {
   try { return katex.renderToString(text, {displayMode:display, throwOnError:true, trust:false, strict:'ignore', output:'htmlAndMathml', maxExpand:1000}); }
   catch (error) { return `<${display?'div':'span'} class="math-error" title="${escapeHtml(error.message)}">${escapeHtml(text)}</${display?'div':'span'}>`; }
 });
-parser.use({renderer:{code({text,lang}) {
-  const language = (lang || '').split(/\s/)[0];
-  const highlighted = hljs.getLanguage(language) ? hljs.highlight(text, {language,ignoreIllegals:true}).value : escapeHtml(text);
-  return `<pre><code class="hljs language-${escapeHtml(language || 'text')}">${highlighted}</code></pre>`;
+parser.use({renderer:{code(token) {
+  const {text,lang}=token,language = (lang || '').split(/\s/)[0];
+  return `<pre${sourceAttributes(token)}><code class="hljs language-${escapeHtml(language || 'text')}">${highlightCode(text,language)}</code></pre>`;
 }}});
 
 let disposeCurrent = null;
@@ -44,6 +37,7 @@ export function mountTools() {
   const query = selector => root.querySelector(selector);
   const selectFields = mountSelectFields(root, signal);
   const source = query('#tool-source');
+  const scrollSync = mountScrollSync(root,signal);
   const kind = root.dataset.mezeTool;
   const storageKey = `meze.tools.${kind}.v1`;
   const saved = storageRead(storageKey);
@@ -53,7 +47,7 @@ export function mountTools() {
   let statusTimer, inputTimer, worker, pdfUrl, pdfSnapshot, pendingPdf, customFont;
   let nextJob = 0;
   let activeJob = null;
-  let viewerUrl,viewerVersion=0,disposePdfViewer;
+  let viewerUrl,viewerVersion=0,disposePdfViewer,pdfSourceMap=[];
   let previousReplacement = null;
   let fullscreen = false, previousScroll = 0;
   let inertElements = [];
@@ -75,19 +69,21 @@ export function mountTools() {
     if (stale) stale.hidden = !pdfSnapshot || (pdfSnapshot.source === source.value && pdfSnapshot.settings === JSON.stringify(settings));
   }
   function updateConversion() {
-    const {text} = convertDelimiters(source.value,direction,true,query('#protect-code').checked);
+    const {text,mapping} = convertDelimiters(source.value,direction,true,query('#protect-code').checked);
     query('#tool-result').value = text;
+    scrollSync.setConversion(mapping);
     persist();
   }
   function updateMarkdown() {
     try {
-      const html = parser.parse(source.value);
+      const html = parser.parser(indexSource(parser.lexer(source.value),source.value));
       query('#markdown-preview').innerHTML = DOMPurify.sanitize(html, {USE_PROFILES:{html:true,mathMl:true}, ADD_ATTR:['target'], FORBID_TAGS:['style','script','iframe','object','embed','form']});
       query('#markdown-preview').querySelectorAll('a').forEach(anchor => {anchor.target='_blank';anchor.rel='noopener noreferrer';});
       query('#markdown-preview').querySelectorAll('input').forEach(input => input.disabled=true);
       query('#markdown-preview').querySelectorAll('img').forEach(image => { image.loading='lazy';image.referrerPolicy='no-referrer'; });
       const errors = query('#markdown-preview').querySelectorAll('.math-error').length;
       root.dataset.mathErrors = errors;
+      scrollSync.refresh();
     } catch (error) { notify(`预览失败：${error.message}`,true); }
     markPdfStale(); persist();
   }
@@ -116,6 +112,7 @@ export function mountTools() {
       root.removeAttribute('role');root.removeAttribute('aria-modal');
     }
     root.classList.toggle('is-fullscreen',enabled);
+    scrollSync.refresh();
     document.body.classList.toggle('tools-editing',enabled);
     const button = query('[data-action="fullscreen"]');
     button.setAttribute('aria-pressed',String(enabled));
@@ -185,6 +182,7 @@ export function mountTools() {
     query('#markdown-preview').hidden=view!=='markdown';query('#pdf-preview').hidden=view!=='pdf';
     query('.pane-heading [data-action="refresh-pdf"]').hidden=view!=='pdf';
     if(view==='pdf'&&pdfUrl)showPdfPreview().catch(error=>notify(error.message,true));
+    scrollSync.align();
   }
   async function showPdfPreview(){
     if(!pdfUrl||viewerUrl===pdfUrl)return;
@@ -195,8 +193,9 @@ export function mountTools() {
       const bytes=await(await fetch(url)).arrayBuffer();
       if(!root.isConnected||current!==viewerVersion)return;
       disposePdfViewer?.();disposePdfViewer=null;
-      const dispose=await module.mountPdfViewer(host,bytes);
-      if(current!==viewerVersion||!root.isConnected)dispose();else disposePdfViewer=dispose;
+      const viewer=await module.mountPdfViewer(host,bytes);
+      if(current!==viewerVersion||!root.isConnected)viewer.dispose();
+      else {disposePdfViewer=viewer.dispose;scrollSync.setPdf(viewer,pdfSourceMap,pdfSnapshot.source);}
     } catch (error) {if(current===viewerVersion)viewerUrl=null;throw error;}
   }
   function getWorker() {
@@ -221,6 +220,7 @@ export function mountTools() {
     if (pdfSnapshot && pdfSnapshot.source===snapshot.source && pdfSnapshot.settings===snapshot.settings && pdfUrl) return {url:pdfUrl,cached:true};
     if (pendingPdf) return pendingPdf;
     pendingPdf=(async () => {
+      const started=performance.now();
       const engine=getWorker();
       const result=await new Promise((resolve,reject) => {
         const id=++nextJob;activeJob={id,resolve,reject};
@@ -228,10 +228,12 @@ export function mountTools() {
       });
       if (!root.isConnected) return null;
       if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+      scrollSync.clearPdf();pdfSourceMap=result.sourceMap||[];
       pdfUrl=URL.createObjectURL(new Blob([result.buffer],{type:'application/pdf'}));pdfSnapshot=snapshot;
       query('.pdf-placeholder').hidden=true;markPdfStale();
       if(!query('#pdf-preview').hidden)showPdfPreview().catch(error=>notify(error.message,true));
       root.dataset.pdfPages=result.pages;root.dataset.pdfWarnings=JSON.stringify(result.warnings);
+      root.dataset.pdfDurationMs=String(Math.round(performance.now()-started));
       notify(`PDF 已生成，共 ${result.pages} 页${result.warnings.length?'。'+result.warnings.join('；'):''}`,result.warnings.length>0);
       return {url:pdfUrl,warnings:result.warnings};
     })();

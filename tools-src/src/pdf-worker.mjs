@@ -8,6 +8,8 @@ import {liteAdaptor} from 'mathjax-full/js/adaptors/liteAdaptor.js';
 import {RegisterHTMLHandler} from 'mathjax-full/js/handlers/html.js';
 import {AllPackages} from 'mathjax-full/js/input/tex/AllPackages.js';
 import {createMarkdown,normalizeSettings} from './core.mjs';
+import {codeSpans} from './syntax.mjs';
+import {indexSource,monotonicPoints} from './source-map.mjs';
 
 const adaptor=liteAdaptor();
 RegisterHTMLHandler(adaptor);
@@ -24,6 +26,7 @@ const mm=value=>value*72/25.4;
 const entities={amp:'&',lt:'<',gt:'>',quot:'"',apos:"'",nbsp:' ',copy:'©',reg:'®',mdash:'—',ndash:'–',hellip:'…'};
 const decode=text=>String(text).replace(/&(#x[0-9a-f]+|#\d+|\w+);/gi,(raw,name)=>name[0]==='#'?String.fromCodePoint(name[1].toLowerCase()==='x'?parseInt(name.slice(2),16):parseInt(name.slice(1),10)):(entities[name]??raw));
 const graphemes=new Intl.Segmenter('zh-CN',{granularity:'grapheme'});
+const codeFeatures={liga:false,calt:false,dlig:false};
 const safeUrl=url=>/^(?:https?:|mailto:|#)/i.test(url||'');
 
 async function loadFont(filename) {
@@ -57,10 +60,14 @@ async function createPdf(job,progress) {
   const settings=normalizeSettings(job.settings);
   progress('正在加载所选字体…');
   const family=settings.font==='serif'?'NotoSerifSC':'NotoSansSC';
-  const fontData=settings.font==='custom'?Buffer.from(job.customFont||[]):await loadFont(`${family}-Regular.otf`);
-  const boldData=settings.font==='custom'?fontData:await loadFont(`${family}-Bold.otf`);
-  const monoData=await loadFont('JetBrainsMono-Regular.ttf');
-  const doc=new PDFDocument({font:fontData,autoFirstPage:false,bufferPages:true,compress:true,pdfVersion:'1.7',info:{Title:settings.title||settings.filename,Author:'',Creator:"Meze's Blog · Markdown Tools"}});
+  const [fontData,boldData,monoData]=await Promise.all([
+    settings.font==='custom'?Buffer.from(job.customFont||[]):loadFont(`${family}-Regular.otf`),
+    settings.font==='custom'?Buffer.from(job.customFont||[]):loadFont(`${family}-Bold.otf`),
+    loadFont('JetBrainsMono-Regular.ttf'),
+  ]);
+  // Register the named font before loading it. Loading the same bytes as the
+  // constructor's default prevents PDFKit from caching the Body alias.
+  const doc=new PDFDocument({font:null,autoFirstPage:false,bufferPages:true,compress:true,pdfVersion:'1.7',info:{Title:settings.title||settings.filename,Author:'',Creator:"Meze's Blog · Markdown Tools"}});
   const chunks=[];
   const finished=new Promise((resolve,reject)=>{doc.on('data',chunk=>chunks.push(chunk));doc.on('end',()=>resolve(Buffer.concat(chunks)));doc.on('error',reject);});
   try{doc.registerFont('Body',fontData);doc.registerFont('BodyBold',boldData);doc.registerFont('Mono',monoData);doc.font('Body');}
@@ -70,6 +77,9 @@ async function createPdf(job,progress) {
   const fontMetrics=new Map();
   const imageCache=new Map();
   const measureCache=new Map();
+  const checkedGlyphs=new Map();
+  const codeCache=new WeakMap();
+  const sourceMap=[];
   const baseSize=settings.fontSize;
   let cursor=0,pageWidth=0,pageHeight=0,left=0,right=0,top=0,bottom=0,pageCount=0;
   function newPage(){
@@ -78,29 +88,34 @@ async function createPdf(job,progress) {
     if(pageCount===1||pageCount%5===0)progress(`正在排版，第 ${pageCount} 页…`);
   }
   function ensure(height){if(cursor+height>bottom+0.01&&cursor>top+0.01)newPage();}
+  function anchor(offset,y=cursor){if(Number.isFinite(offset))sourceMap.push({offset,page:pageCount,y,top:(pageCount-1)*pageHeight+y});}
   function metric(font,size){
     if(!fontMetrics.has(font)){doc.font(font);fontMetrics.set(font,{ascender:doc._font.ascender/1000,descender:-doc._font.descender/1000});}
     const value=fontMetrics.get(font);return {above:value.ascender*size,below:value.descender*size};
   }
   function width(text,font,size){
     const key=JSON.stringify([font,size,text]);
-    if(!measureCache.has(key)){doc.font(font).fontSize(size);measureCache.set(key,doc.widthOfString(text));}
+    if(!measureCache.has(key)){doc.font(font).fontSize(size);measureCache.set(key,doc.widthOfString(text,{features:font==='Mono'?codeFeatures:undefined}));}
     return measureCache.get(key);
   }
-  function textUnit(text,style={}){
+  function textUnit(text,style={},span){
     const size=style.size||baseSize;
-    let font=style.code?'Mono':(style.bold?'BodyBold':'Body');
-    if(style.code&&/[^\x00-\x7f]/.test(text))font=style.bold?'BodyBold':'Body';
+    const bodyFont=style.bold&&settings.font!=='custom'?'BodyBold':'Body';
+    let font=style.code?'Mono':bodyFont;
+    if(style.code&&/[^\x00-\x7f]/.test(text))font=bodyFont;
     doc.font(font);
-    for(const character of text){if(!/[\s\u200b\u200d\ufe0f]/.test(character)&&!doc._font.font.hasGlyphForCodePoint(character.codePointAt(0)))missingGlyphs.add(character);}
-    return {kind:'text',text,font,size,w:width(text,font,size),...metric(font,size),style};
+    if(!checkedGlyphs.has(font))checkedGlyphs.set(font,new Set());
+    const checked=checkedGlyphs.get(font);
+    for(const character of text){if(!checked.has(character)){checked.add(character);if(!/[\s\u200b\u200d\ufe0f]/.test(character)&&!doc._font.font.hasGlyphForCodePoint(character.codePointAt(0)))missingGlyphs.add(character);}}
+    return {kind:'text',text,font,size,w:width(text,font,size),...metric(font,size),style,...span};
   }
-  function unitsFromText(text,style){
-    const units=[];let word='';
-    function flush(){if(word){units.push(textUnit(word,style));word='';}}
-    for(const {segment} of graphemes.segment(text)){
-      if(/^[A-Za-z0-9_]+$/.test(segment))word+=segment;
-      else{flush();units.push(textUnit(segment,style));}
+  function unitsFromText(text,style,span){
+    const units=[];let word='',wordStart=0;
+    const range=(start,end)=>Number.isFinite(span?.sourceStart)?{sourceStart:span.sourceStart+(span.sourceEnd-span.sourceStart)*start/Math.max(1,text.length),sourceEnd:span.sourceStart+(span.sourceEnd-span.sourceStart)*end/Math.max(1,text.length)}:{};
+    function flush(){if(word){units.push(textUnit(word,style,range(wordStart,wordStart+word.length)));word='';}}
+    for(const {segment,index} of graphemes.segment(text)){
+      if(/^[A-Za-z0-9_]+$/.test(segment)){if(!word)wordStart=index;word+=segment;}
+      else{flush();units.push(textUnit(segment,style,range(index,index+segment.length)));}
     }
     flush();return units;
   }
@@ -129,23 +144,23 @@ async function createPdf(job,progress) {
       switch(token.type){
         case 'text': case 'escape':
           if(token.tokens)units.push(...await inline(token.tokens,style));
-          else units.push(...unitsFromText(decode(token.text).replace(/\s*\n\s*/g,' '),style));
+          else units.push(...unitsFromText(decode(token.text).replace(/\s*\n\s*/g,' '),style,token));
           break;
         case 'strong':units.push(...await inline(token.tokens,{...style,bold:true}));break;
         case 'em':units.push(...await inline(token.tokens,{...style,italic:true}));break;
         case 'del':units.push(...await inline(token.tokens,{...style,strike:true}));break;
         case 'link':units.push(...await inline(token.tokens,{...style,link:safeUrl(token.href)?token.href:null,color:'#bc4545'}));break;
-        case 'codespan':units.push(...unitsFromText(decode(token.text),{...style,code:true,size:style.size?style.size*.9:baseSize*.9}));break;
+        case 'codespan':units.push(...unitsFromText(decode(token.text),{...style,code:true,size:style.size?style.size*.9:baseSize*.9},token));break;
         case 'br':units.push({kind:'break'});break;
-        case 'mathInline':case 'mathBlock':units.push(formula(token.text,token.display,style.size||baseSize));break;
+        case 'mathInline':case 'mathBlock':units.push({...formula(token.text,token.display,style.size||baseSize),sourceStart:token.sourceStart,sourceEnd:token.sourceEnd});break;
         case 'image':{
           const image=await imageData(token.href);
-          if(image){const w=Math.min(image.width*.75,180),h=w/image.width*image.height;units.push({kind:'image',image,w,above:h,below:0});}
-          else units.push(...unitsFromText(`[图片：${token.text||'未载入'}]`,{...style,color:'#777777'}));
+          if(image){const w=Math.min(image.width*.75,180),h=w/image.width*image.height;units.push({kind:'image',image,w,above:h,below:0,sourceStart:token.sourceStart,sourceEnd:token.sourceEnd});}
+          else units.push(...unitsFromText(`[图片：${token.text||'未载入'}]`,{...style,color:'#777777'},token));
           break;
         }
-        case 'html':units.push(...unitsFromText(decode(token.text.replace(/<br\s*\/?\s*>/gi,'\n')),{...style,color:'#555555'}));break;
-        default:if(token.text)units.push(...unitsFromText(decode(token.text),style));
+        case 'html':units.push(...unitsFromText(decode(token.text.replace(/<br\s*\/?\s*>/gi,'\n')),{...style,color:'#555555'},token));break;
+        default:if(token.text)units.push(...unitsFromText(decode(token.text),style,token));
       }
     }
     return units;
@@ -157,7 +172,7 @@ async function createPdf(job,progress) {
     for(let index=0;index<queue.length;index++){
       let unit=queue[index];
       if(unit.kind==='break'){push();continue;}
-      if(unit.w>available&&unit.kind==='text'&&[...unit.text].length>1){queue.splice(index,1,...[...graphemes.segment(unit.text)].map(value=>textUnit(value.segment,unit.style)));index--;continue;}
+      if(unit.w>available&&unit.kind==='text'&&[...unit.text].length>1){queue.splice(index,1,...[...graphemes.segment(unit.text)].map(value=>textUnit(value.segment,unit.style,Number.isFinite(unit.sourceStart)?{sourceStart:unit.sourceStart+(unit.sourceEnd-unit.sourceStart)*value.index/unit.text.length,sourceEnd:unit.sourceStart+(unit.sourceEnd-unit.sourceStart)*(value.index+value.segment.length)/unit.text.length}:undefined)));index--;continue;}
       if(unit.w>available&&['math','image'].includes(unit.kind)){
         const scale=available/unit.w;unit={...unit,w:available,above:unit.above*scale,below:unit.below*scale};
         if(unit.kind==='math')warnings.add('过宽公式已缩小以适应纸张');
@@ -187,19 +202,26 @@ async function createPdf(job,progress) {
     const svg=unit.svg.replace(/\bwidth="[^"]*"/,`width="${unit.w}"`).replace(/\bheight="[^"]*"/,`height="${unit.above+unit.below}"`);
     SVGtoPDF(doc,svg,x,y,{width:unit.w,height:unit.above+unit.below,assumePt:true,fontCallback:()=> 'Body',warningCallback:message=>{if(/unsupported|not found/i.test(message))warnings.add('部分公式样式未被 PDF 引擎支持');}});
   }
-  function drawLine(line,x,y,available,{size=baseSize,code=false,align='left',quote=false}={}){
+  function drawLine(line,x,y,available,{size=baseSize,code=false,align='left',quote=false,map=true}={}){
     const metrics=lineMetrics(line,size,code);
+    if(map){anchor(line.find(unit=>Number.isFinite(unit.sourceStart))?.sourceStart,y);anchor(line.findLast(unit=>Number.isFinite(unit.sourceEnd))?.sourceEnd,y+metrics.height);}
     const total=line.reduce((sum,unit)=>sum+unit.w,0);
     if(align==='center')x+=(available-total)/2;else if(align==='right')x+=available-total;
     const baseline=y+(metrics.height-metrics.above-metrics.below)/2+metrics.above;
     if(quote)doc.save().lineWidth(2).strokeColor('#d45d5d').moveTo(x-10,y).lineTo(x-10,y+metrics.height).stroke().restore();
+    const runs=[];
     for(const unit of line){
+      const previous=runs.at(-1);
+      if(unit.kind==='text'&&previous?.kind==='text'&&unit.font===previous.font&&unit.size===previous.size&&['bold','italic','strike','link','color','code'].every(key=>unit.style[key]===previous.style[key])){previous.text+=unit.text;previous.w+=unit.w;}
+      else runs.push({...unit});
+    }
+    for(const unit of runs){
       if(unit.kind==='text'){
         const style=unit.style;
         if(style.code&&!code)doc.save().roundedRect(x-1,baseline-unit.above-1,unit.w+2,unit.above+unit.below+2,2).fill('#f1f2f4').restore();
         doc.font(unit.font).fontSize(unit.size).fillColor(style.color||'#262a31');
         if(style.bold&&settings.font==='custom')doc.strokeColor(style.color||'#262a31').lineWidth(.18);
-        doc.text(unit.text,x,baseline-unit.above,{lineBreak:false,oblique:style.italic?10:0,underline:Boolean(style.link),fill:true,stroke:Boolean(style.bold&&settings.font==='custom')});
+        doc.text(unit.text,x,baseline-unit.above,{lineBreak:false,textWidth:unit.w,features:unit.font==='Mono'?codeFeatures:undefined,oblique:style.italic?10:0,underline:Boolean(style.link),fill:true,stroke:Boolean(style.bold&&settings.font==='custom')});
         if(style.link)doc.link(x,baseline-unit.above,unit.w,unit.above+unit.below,style.link);
         if(style.strike)doc.save().lineWidth(.5).strokeColor(style.color||'#262a31').moveTo(x,baseline-unit.size*.3).lineTo(x+unit.w,baseline-unit.size*.3).stroke().restore();
       }else if(unit.kind==='math'){
@@ -225,7 +247,21 @@ async function createPdf(job,progress) {
     cursor+=after;
   }
   function codeLines(token,indent){
-    return token.text.replace(/\t/g,'    ').split('\n').flatMap(text=>wrap(unitsFromText(text,{size:settings.codeFontSize,code:true}),right-left-indent-20));
+    if(!codeCache.has(token))codeCache.set(token,new Map());
+    const cache=codeCache.get(token);if(cache.has(indent))return cache.get(indent);
+    const raw=token.raw||'',body=raw.indexOf(token.text);
+    const start=token.sourceStart+(body>=0?body:(raw.indexOf('\n')+1));
+    const originalLines=[[]];
+    for(const span of codeSpans(token.text,token.lang)){
+      let offset=start+span.start;
+      const parts=span.text.split('\n');
+      for(let i=0;i<parts.length;i++){
+        originalLines.at(-1).push(...unitsFromText(parts[i].replace(/\t/g,'    '),{size:settings.codeFontSize,code:true,color:span.color},{sourceStart:offset,sourceEnd:offset+parts[i].length}));
+        offset+=parts[i].length+1;if(i<parts.length-1)originalLines.push([]);
+      }
+    }
+    const result=originalLines.flatMap(line=>wrap(line,right-left-indent-20));
+    cache.set(indent,result);return result;
   }
   function codeHeight(token,indent){return codeLines(token,indent).reduce((sum,line)=>sum+lineMetrics(line,settings.codeFontSize,true).height,0)+(token.lang?settings.codeFontSize*2.1:0)+10;}
   async function codeBlock(token,indent){
@@ -233,12 +269,14 @@ async function createPdf(job,progress) {
     const totalHeight=codeHeight(token,indent);
     if(totalHeight<(bottom-top)*.65)ensure(totalHeight);
     cursor+=3;
+    anchor(token.sourceStart);
     if(token.lang){ensure(size*2.1);doc.save().rect(x,cursor,right-x,size*2.1).fill('#f0f1f4').restore();drawLine([textUnit(token.lang.split(/\s/)[0],{size:8,color:'#777d85'})],x+10,cursor,right-x-20,{size:8});cursor+=size*2.1;}
     for(const line of codeLines(token,indent)){
         const height=lineMetrics(line,size,true).height;ensure(height);
         doc.save().rect(x,cursor,right-x,height+.2).fill('#f4f5f7').restore();
         drawLine(line,x+10,cursor,available,{size,code:true});cursor+=height;
     }
+    anchor(token.sourceEnd);
     cursor+=settings.paragraphGap+7;
   }
   async function displayFormula(token,indent){
@@ -247,8 +285,10 @@ async function createPdf(job,progress) {
     const scale=Math.min(1,available/unit.w,(bottom-top-18)/(unit.above+unit.below));
     if(scale<1){unit={...unit,w:unit.w*scale,above:unit.above*scale,below:unit.below*scale};warnings.add('过宽公式已缩小以适应纸张');}
     const height=unit.above+unit.below+baseSize*.8;ensure(height);cursor+=baseSize*.35;
+    anchor(token.sourceStart);
     drawFormula(unit,left+indent+(available-unit.w)/2,cursor);
     cursor+=unit.above+unit.below+baseSize*.45+settings.paragraphGap;
+    anchor(token.sourceEnd);
   }
   async function imageBlock(token,indent){
     const image=await imageData(token.href);
@@ -256,7 +296,7 @@ async function createPdf(job,progress) {
     const available=right-left-indent;
     const scale=Math.min(.75,available/image.width,(bottom-top-20)/image.height);
     const width=image.width*scale,height=image.height*scale;
-    ensure(height+10);doc.image(image.bytes,left+indent+(available-width)/2,cursor+4,{width,height});cursor+=height+10+settings.paragraphGap;
+    ensure(height+10);anchor(token.sourceStart);doc.image(image.bytes,left+indent+(available-width)/2,cursor+4,{width,height});cursor+=height+10+settings.paragraphGap;anchor(token.sourceEnd);
   }
   async function table(token,indent){
     const available=right-left-indent,columns=token.header.length;
@@ -282,7 +322,7 @@ async function createPdf(job,progress) {
           doc.save().rect(x,cursor,widths[column],height).fillAndStroke(heading?'#f1f2f5':'#ffffff','#d9dce2').restore();
           let y=cursor+padding;
           for(let line=0;line<count;line++){
-            drawLine(cells[column]?.[index+line]||[],x+padding,y,widths[column]-padding*2,{size,align:token.align[column]||'left'});y+=heights[index+line];
+            drawLine(cells[column]?.[index+line]||[],x+padding,y,widths[column]-padding*2,{size,align:token.align[column]||'left',map:!heading&&column===0});y+=heights[index+line];
           }
           x+=widths[column];
         }
@@ -336,7 +376,8 @@ async function createPdf(job,progress) {
   }
   newPage();
   if(right-left<baseSize*4||bottom-top<baseSize*4)throw new Error('纸张可用区域过小，请减小字号或页边距。');
-  await blocks(parser.lexer(job.source));
+  await blocks(indexSource(parser.lexer(job.source),job.source));
+  anchor(job.source.length);
   if(missingGlyphs.size)warnings.add(`所选字体缺少字符：${[...missingGlyphs].slice(0,8).join('')}，请更换字体`);
   const pages=doc.bufferedPageRange();
   for(let page=0;page<pages.count;page++){
@@ -349,7 +390,7 @@ async function createPdf(job,progress) {
     }
   }
   doc.end();const buffer=await finished;
-  return {buffer:buffer.buffer.slice(buffer.byteOffset,buffer.byteOffset+buffer.byteLength),pages:pages.count,warnings:[...warnings]};
+  return {buffer:buffer.buffer.slice(buffer.byteOffset,buffer.byteOffset+buffer.byteLength),pages:pages.count,warnings:[...warnings],sourceMap:monotonicPoints(sourceMap),pageSize:{width:pageWidth,height:pageHeight}};
 }
 
 let queue=Promise.resolve();

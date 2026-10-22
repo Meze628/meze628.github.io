@@ -1,4 +1,5 @@
-import { Marked } from 'marked';
+import { Marked, Renderer } from 'marked';
+import {mappedHtml} from './source-map.mjs';
 
 export const escapeHtml = text => String(text).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 export function escaped(text, position) {
@@ -82,6 +83,9 @@ export function readMath(source, position = 0) {
 export function convertDelimiters(source, direction = 'dollar', includeDisplay = true, protectCode = true) {
   const ranges = protectCode ? protectedRanges(source) : [];
   const pieces = [];
+  const mapping=[{source:0,output:0}];
+  let outputLength=0;
+  const append=fragment=>{pieces.push(fragment);outputLength+=fragment.length;};
   const stats = { inline: 0, display: 0, unclosed: 0, protected: ranges.length };
   let rangeIndex = 0;
   let previousDollarEnd=-1;
@@ -89,7 +93,7 @@ export function convertDelimiters(source, direction = 'dollar', includeDisplay =
     while (ranges[rangeIndex] && ranges[rangeIndex][1] <= position) rangeIndex++;
     const range = ranges[rangeIndex];
     if (range && position >= range[0] && position < range[1]) {
-      pieces.push(source.slice(position, range[1])); position = range[1]; continue;
+      append(source.slice(position, range[1])); position = range[1]; continue;
     }
     const math = readMath(source, position);
     if (math && (!range || math.end <= range[0])) {
@@ -100,16 +104,26 @@ export function convertDelimiters(source, direction = 'dollar', includeDisplay =
         fragment=left + (math.display ? '\n' : '') + math.text + (math.display ? '\n' : '') + right;
         stats[math.display ? 'display' : 'inline']++;
       }
-      if(!math.display&&fragment.startsWith('$')&&previousDollarEnd===position)pieces.push(' ');
-      pieces.push(fragment);
+      if(!math.display&&fragment.startsWith('$')&&previousDollarEnd===position)append(' ');
+      mapping.push({source:position,output:outputLength});
+      if(fragment!==math.raw){
+        const bodyStart=math.raw.indexOf(math.text,math.left.length);
+        const targetLeft=direction==='dollar'?'$'.repeat(math.display?2:1):'\\'+(math.display?'[':'(');
+        const targetBodyStart=targetLeft.length+(math.display?1:0);
+        mapping.push({source:position+bodyStart,output:outputLength+targetBodyStart});
+        mapping.push({source:position+bodyStart+math.text.length,output:outputLength+targetBodyStart+math.text.length});
+      }
+      append(fragment);
+      mapping.push({source:math.end,output:outputLength});
       previousDollarEnd=!math.display&&fragment.startsWith('$')?math.end:-1;
       position = math.end;
     } else {
       if (!escaped(source, position) && /^(?:\\\(|\\\[)/.test(source.slice(position))) stats.unclosed++;
-      pieces.push(source[position++]);
+      append(source[position++]);
     }
   }
-  return { text: pieces.join(''), stats };
+  mapping.push({source:source.length,output:outputLength});
+  return { text: pieces.join(''), stats, mapping };
 }
 
 export function createMarkdown(renderMath) {
@@ -127,7 +141,7 @@ export function createMarkdown(renderMath) {
           if (!remainder) return;
           return { type:'mathBlock', raw:source.slice(0, math.end) + remainder[0], text:math.text, display:true };
         },
-        renderer: token => renderMath ? renderMath(token.text, true) : '',
+        renderer: token => mappedHtml(renderMath ? renderMath(token.text, true) : '',token),
       },
       {
         name: 'mathInline', level: 'inline',
@@ -145,13 +159,16 @@ export function createMarkdown(renderMath) {
           const match = source.match(/^ {0,3}<!--\s*pagebreak\s*-->[ \t]*(?:\n|$)/i);
           if (match) return {type:'pageBreak',raw:match[0]};
         },
-        renderer: () => '<div class="md-page-break" aria-label="分页符">分页符</div>',
+        renderer: token => mappedHtml('<div class="md-page-break" aria-label="分页符">分页符</div>',token),
       },
     ],
     renderer: {
       html({ text }) { return /^\s*<br\s*\/?>(?:\s*)$/i.test(text) ? '<br>' : escapeHtml(text); },
     },
   });
+  const renderers={};
+  for(const name of ['heading','paragraph','blockquote','list','listitem','table','hr'])renderers[name]=function(token){return mappedHtml(Renderer.prototype[name].call(this,token),token);};
+  parser.use({renderer:renderers});
   return parser;
 }
 

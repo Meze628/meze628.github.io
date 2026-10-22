@@ -61,7 +61,7 @@ export async function mountPdfViewer(container,bytes) {
 
   try {
     pdf=await task.promise;
-    if(!shell.isConnected){dispose();return dispose;}
+    if(!shell.isConnected){dispose();return {dispose,scroll,pages:[],pageHeight:1};}
     const first=await pdf.getPage(1),original=first.getViewport({scale:1});
     container.dataset.totalPages=pdf.numPages;
     label.textContent='共 '+pdf.numPages+' 页';
@@ -81,7 +81,7 @@ export async function mountPdfViewer(container,bytes) {
     }
     scroll.append(fragment);
     await render(pages[0]);
-    if(destroyed||!shell.isConnected){dispose();return dispose;}
+    if(destroyed||!shell.isConnected){dispose();return {dispose,scroll,pages:[],pageHeight:original.height};}
     visibilityObserver=new IntersectionObserver(entries=>{
       for(const entry of entries) {
         const record=pages[Number(entry.target.dataset.page)-1];
@@ -102,6 +102,6 @@ export async function mountPdfViewer(container,bytes) {
       },120);
     });
     resizeObserver.observe(scroll);
-    return dispose;
+    return {dispose,scroll,pages:pages.map(record=>record.element),pageHeight:original.height};
   } catch(error) {dispose();throw error;}
 }
