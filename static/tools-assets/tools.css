@@ -61,11 +61,14 @@
 .md-preview > :first-child { margin-top: 0; }
 .md-preview > :last-child { margin-bottom: 0; }
 .md-preview, .md-preview :is(p,h1,h2,h3,h4,h5,h6,li,th,td) { color: var(--tools-ink); }
+.tools-shell[data-pdf-font="yahei"] .md-preview { font-family: "Microsoft YaHei","Microsoft YaHei UI",sans-serif; }
 .md-preview h1 { font-size: 1.85em; }
 .md-preview h2 { font-size: 1.5em; }
 .md-preview h3 { font-size: 1.2em; }
-.md-preview pre { position: relative; margin: 1.1em 0; padding: 16px; border-radius: 6px; background: var(--highlight-background); color: var(--highlight-foreground); overflow: auto; line-height: 1.65; }
-.md-preview pre code { display: block; padding: 0; background: transparent; color: inherit; font-size: 12px; white-space: pre; }
+@font-face { font-family: "Meze Code"; src: url("./fonts-pdf/code-regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+.md-preview pre { position: relative; margin: 1.1em 0; padding: 16px; border-radius: 6px; background: var(--highlight-background); color: var(--highlight-foreground); overflow: auto; line-height: 1.6; }
+.tools-shell .md-preview pre, .tools-shell .md-preview code { font-family: "Meze Code",Consolas,monospace !important; font-weight: 400 !important; font-variant-ligatures: none; font-feature-settings: "liga" 0,"calt" 0; }
+.md-preview pre code { display: block; padding: 0; background: transparent; color: inherit; font-size: var(--tools-code-size,10pt); white-space: pre; }
 .md-preview :not(pre) > code { padding: .15em .35em; background: var(--color-code-background); border-radius: 3px; }
 .md-preview table { width: 100%; border-collapse: collapse; display: block; overflow: auto; margin: 1em 0; }
 .md-preview th, .md-preview td { padding: 8px 12px; border: 1px solid var(--tools-line); }
@@ -124,9 +127,9 @@
 .number-step .tool-icon { width: 14px; height: 14px; }
 .settings-wide { grid-column: span 2; }
 .settings-checkbox { align-self: end; height: 38px; font-size: 12px; }
-.custom-font-control { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12px; padding-top: 16px; }
+.custom-font-control, .yahei-font-control { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12px; padding-top: 16px; }
 .custom-font-control input { max-width: 240px; }
-.custom-font-control span { color: var(--tools-muted); }
+.custom-font-control span, .yahei-font-control span { color: var(--tools-muted); }
 .tool-status { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 4000; max-width: min(640px,calc(100vw - 32px)); padding: 12px 20px; border: 0; border-radius: 8px; background: var(--color-wrap); color: var(--tools-ink); box-shadow: var(--shadow-card); font-size: 13px; }
 .tool-status[data-kind="error"], .tool-error { color: var(--red-1); }
 .tools-home { max-width: 1120px; margin: 32px auto 80px; padding: 28px 30px 30px; border-radius: var(--tools-radius); background: var(--color-wrap); box-shadow: var(--shadow-card); }

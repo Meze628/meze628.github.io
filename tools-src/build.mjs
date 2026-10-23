@@ -7,7 +7,7 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 const destination = path.resolve(root, '../static/tools-assets');
 await mkdir(destination, { recursive: true });
 await build({
-  entryPoints: { tools: path.join(root, 'src/tools.mjs'), 'pdf-worker': path.join(root, 'src/pdf-worker.mjs'), 'pdf-viewer': path.join(root, 'src/pdf-viewer.mjs') },
+  entryPoints: { tools: path.join(root, 'src/tools.mjs'), 'pdf-worker': path.join(root, 'src/pdf-worker.mjs'), 'pdf-math':path.join(root,'src/pdf-math.mjs'), 'pdf-viewer': path.join(root, 'src/pdf-viewer.mjs') },
   absWorkingDir: root, outdir: destination, bundle: true, format: 'esm', target: 'es2020', minify: true,
   legalComments: 'linked', sourcemap: false,
   define: { 'process.env.NODE_ENV': '"production"' },

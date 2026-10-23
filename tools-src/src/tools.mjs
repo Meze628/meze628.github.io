@@ -6,6 +6,7 @@ import {mountSelectFields} from './select-field.mjs';
 import {highlightCode} from './syntax.mjs';
 import {indexSource,sourceAttributes} from './source-map.mjs';
 import {mountScrollSync} from './scroll-sync.mjs';
+import {inspectFont,checkEmbedding} from './font-file.mjs';
 
 const parser = createMarkdown((text, display) => {
   try { return katex.renderToString(text, {displayMode:display, throwOnError:true, trust:false, strict:'ignore', output:'htmlAndMathml', maxExpand:1000}); }
@@ -45,6 +46,7 @@ export function mountTools() {
   if (settings.font === 'custom') settings.font = 'sans';
   let direction = saved?.direction === 'bracket' ? 'bracket' : 'dollar';
   let statusTimer, inputTimer, worker, workerReady=false, engineTimer, warmupTimer, pdfUrl, pdfSnapshot, pendingPdf, customFont;
+  let customFontName,customBoldFont,customBoldFontName,localFontMode;
   let nextJob = 0;
   let activeJob = null;
   let viewerUrl,viewerVersion=0,disposePdfViewer,pdfSourceMap=[],viewerModule;
@@ -174,6 +176,9 @@ export function mountTools() {
     selectFields.sync();
     query('#document-name').value=settings.filename;
     query('.custom-font-control').hidden=settings.font!=='custom';
+    query('.yahei-font-control').hidden=settings.font!=='yahei';
+    root.style.setProperty('--tools-code-size',settings.codeFontSize+'pt');
+    root.dataset.pdfFont=settings.font;
   }
   function setView(view) {
     for (const tab of root.querySelectorAll('[data-view]')) {
@@ -216,9 +221,9 @@ export function mountTools() {
   }
   async function generatePdf() {
     if (!source.value.trim()) throw new Error('先写一点内容，再生成 PDF。');
-    if (settings.font==='custom' && !customFont) {
+    if (['custom','yahei'].includes(settings.font) && (!customFont||localFontMode!==settings.font)) {
       query('#pdf-settings').hidden=false;query('[data-action="settings"]').setAttribute('aria-expanded','true');
-      throw new Error('请先导入 .ttf 或 .otf 字体文件，或改用内置字体。');
+      throw new Error(settings.font==='yahei'?'请先读取本机微软雅黑，或选择微软雅黑字体文件。':'请先导入 .ttf、.otf 或 .ttc 字体文件，或改用内置字体。');
     }
     const snapshot={source:source.value,settings:JSON.stringify(settings)};
     if (pdfSnapshot && pdfSnapshot.source===snapshot.source && pdfSnapshot.settings===snapshot.settings && pdfUrl) return {url:pdfUrl,cached:true};
@@ -232,7 +237,8 @@ export function mountTools() {
       }
       const result=await new Promise((resolve,reject) => {
         const id=++nextJob;activeJob={id,resolve,reject};
-        engine.postMessage({id,source:snapshot.source,settings:{...settings},customFont});
+        const local=['custom','yahei'].includes(settings.font);
+        engine.postMessage({id,source:snapshot.source,settings:{...settings},customFont:local?customFont:undefined,customFontName:local?customFontName:undefined,customBoldFont:local?customBoldFont:undefined,customBoldFontName:local?customBoldFontName:undefined});
       });
       if (!root.isConnected) return null;
       if (pdfUrl) URL.revokeObjectURL(pdfUrl);
@@ -265,15 +271,39 @@ export function mountTools() {
   }
 
   async function openNativePdf() {
-    const popup=window.open('about:blank','_blank','popup,width=1100,height=850');
-    if (!popup) {notify('请允许此页面打开 PDF 预览窗口。',true);return;}
-    popup.opener=null;popup.document.title='PDF 预览';
     try {
       const result=await generatePdf();
-      if (!result || popup.closed) {if(!popup.closed)popup.close();return;}
-      popup.addEventListener('load',()=>{try{popup.focus();popup.print();}catch{}},{once:true});
-      popup.location.replace(result.url);
-    } catch(error) {popup.close();notify(error.message,true);}
+      if (!result||!root.isConnected)return;
+      const frame=document.createElement('iframe');
+      frame.title='PDF 打印预览';frame.tabIndex=-1;frame.setAttribute('aria-hidden','true');
+      frame.style.cssText='position:fixed;left:-10000px;top:0;width:1px;height:1px;border:0;';
+      frame.src=result.url;
+      const cleanup=()=>frame.remove();
+      frame.addEventListener('load',()=>{
+        try{frame.contentWindow.addEventListener('afterprint',cleanup,{once:true});frame.contentWindow.focus();frame.contentWindow.print();}
+        catch{cleanup();notify('浏览器未能调起 PDF 打印预览，请下载 PDF 后打印。',true);}
+      },{once:true});
+      on(window,'pagehide',cleanup);document.body.append(frame);
+    } catch(error) {notify(error.message,true);}
+  }
+
+  function acceptLocalFont(bytes,mode,name,boldBytes,boldName) {
+    const face=inspectFont(bytes,name);checkEmbedding(face);
+    if(boldBytes)checkEmbedding(inspectFont(boldBytes,boldName));
+    customFont=bytes;customFontName=face.name;customBoldFont=boldBytes;customBoldFontName=boldName;localFontMode=mode;
+    pdfSnapshot=null;markPdfStale();
+  }
+  async function readYahei() {
+    if(!window.queryLocalFonts){query('#yahei-font-file').click();return;}
+    try {
+      const fonts=await window.queryLocalFonts({postscriptNames:['MicrosoftYaHei','MicrosoftYaHei-Bold']});
+      const regular=fonts.find(font=>font.postscriptName==='MicrosoftYaHei'),bold=fonts.find(font=>font.postscriptName==='MicrosoftYaHei-Bold');
+      if(!regular)throw new Error('未找到本机微软雅黑，请选择字体文件。');
+      const bytes=new Uint8Array(await(await regular.blob()).arrayBuffer());
+      const boldBytes=bold?new Uint8Array(await(await bold.blob()).arrayBuffer()):undefined;
+      acceptLocalFont(bytes,'yahei',regular.postscriptName,boldBytes,bold?.postscriptName);
+      query('[data-yahei-font-name]').textContent='微软雅黑已载入';notify('微软雅黑已载入');
+    }catch(error){notify(error.name==='NotAllowedError'?'未获得本机字体访问权限，可改用“选择字体文件”。':error.message,true);}
   }
 
   on(root,'click',event => {
@@ -300,6 +330,8 @@ export function mountTools() {
     if (action==='download-pdf') runPdf(true);
     if (action==='generate-pdf'||action==='refresh-pdf') {if(action==='refresh-pdf')viewerUrl=null;runPdf(false);}
     if (action==='open-pdf') openNativePdf();
+    if (action==='read-yahei') readYahei();
+    if (action==='import-yahei') query('#yahei-font-file').click();
   });
   on(query('[data-file-input]'),'change',async event => {
     const file=event.target.files[0];if (!file) return;
@@ -340,7 +372,21 @@ export function mountTools() {
     on(query('#custom-font-file'),'change',async event=>{
       const file=event.target.files[0];if(!file)return;
       if(file.size>40*1024*1024){notify('字体文件超过 40 MB，请选择较小的字体。',true);return;}
-      customFont=new Uint8Array(await file.arrayBuffer());pdfSnapshot=null;query('[data-font-name]').textContent=file.name;notify('自定义字体已载入');markPdfStale();
+      try{acceptLocalFont(new Uint8Array(await file.arrayBuffer()),'custom');query('[data-font-name]').textContent=file.name;notify('自定义字体已载入');}
+      catch(error){notify(error.message,true);}finally{event.target.value='';}
+    });
+    on(query('#yahei-font-file'),'change',async event=>{
+      try{
+        const faces=await Promise.all([...event.target.files].map(async file=>{
+          if(file.size>40*1024*1024)throw new Error('字体文件超过 40 MB，请选择较小的字体。');
+          const bytes=new Uint8Array(await file.arrayBuffer());return {bytes,face:inspectFont(bytes,'MicrosoftYaHei')};
+        }));
+        if(!faces.length)return;
+        const regular=faces.find(value=>/^MicrosoftYaHei(?:UI)?$/.test(value.face.name)),bold=faces.find(value=>/^MicrosoftYaHei(?:UI)?-Bold$/.test(value.face.name));
+        if(!regular)throw new Error('请选择微软雅黑的常规字体文件，例如 msyh.ttc。');
+        acceptLocalFont(regular.bytes,'yahei',regular.face.name,bold?.bytes,bold?.face.name);
+        query('[data-yahei-font-name]').textContent='微软雅黑已载入';notify('微软雅黑已载入');
+      }catch(error){notify(error.message,true);}finally{event.target.value='';}
     });
     on(query('.preview-tabs'),'keydown',event=>{if(!['ArrowLeft','ArrowRight'].includes(event.key))return;event.preventDefault();const view=query('[data-view="markdown"]').getAttribute('aria-selected')==='true'?'pdf':'markdown';setView(view);query(`[data-view="${view}"]`).focus();});
   }

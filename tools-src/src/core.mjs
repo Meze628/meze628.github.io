@@ -188,7 +188,7 @@ export function normalizeSettings(settings = {}) {
   }
   if (!['A4','A5','LETTER'].includes(result.paper)) result.paper = defaults.paper;
   if (!['portrait','landscape'].includes(result.orientation)) result.orientation = defaults.orientation;
-  if (!['sans','serif','custom'].includes(result.font)) result.font = defaults.font;
+  if (!['sans','serif','yahei','custom'].includes(result.font)) result.font = defaults.font;
   result.pageNumbers = Boolean(result.pageNumbers);
   for (const key of ['filename','title','header']) result[key] = String(result[key] ?? '').slice(0,120);
   return result;

@@ -4,7 +4,7 @@ GlobalWorkerOptions.workerSrc=new URL('./pdfjs-worker.mjs',import.meta.url).href
 export async function mountPdfViewer(container,bytes) {
   const shell=document.createElement('div');
   shell.className='pdf-continuous-viewer';
-  shell.innerHTML='<div class="pdf-viewer-toolbar"><span data-page-label>正在载入…</span><button type="button" class="tool-button tool-button-small" data-action="open-pdf" title="打开原 PDF 并打印"><svg class="tool-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18m-14-2h.01M10 7h.01"/></svg>预览窗口 PDF</button></div><div class="pdf-canvas-scroll" role="region" aria-label="PDF 连续预览" tabindex="0"></div>';
+  shell.innerHTML='<div class="pdf-viewer-toolbar"><span data-page-label>正在载入…</span><button type="button" class="tool-button tool-button-small" data-action="open-pdf" title="打开 PDF 打印预览"><svg class="tool-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18m-14-2h.01M10 7h.01"/></svg>预览窗口 PDF</button></div><div class="pdf-canvas-scroll" role="region" aria-label="PDF 连续预览" tabindex="0"></div>';
   container.replaceChildren(shell);
   const scroll=shell.querySelector('.pdf-canvas-scroll'),label=shell.querySelector('[data-page-label]');
   const task=getDocument({data:new Uint8Array(bytes),isEvalSupported:false,useSystemFonts:false,verbosity:0});

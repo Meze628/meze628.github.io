@@ -1,26 +1,19 @@
 import {PDFDocument} from 'pdfkit';
-import SVGtoPDF from 'svg-to-pdfkit';
 import {Buffer} from 'buffer';
-import {mathjax} from 'mathjax-full/js/mathjax.js';
-import {TeX} from 'mathjax-full/js/input/tex.js';
-import {SVG} from 'mathjax-full/js/output/svg.js';
-import {liteAdaptor} from 'mathjax-full/js/adaptors/liteAdaptor.js';
-import {RegisterHTMLHandler} from 'mathjax-full/js/handlers/html.js';
-import {AllPackages} from 'mathjax-full/js/input/tex/AllPackages.js';
 import {createMarkdown,normalizeSettings} from './core.mjs';
 import {codeSpans} from './syntax.mjs';
 import {indexSource,monotonicPoints} from './source-map.mjs';
-import {fontPlan} from './pdf-fonts.mjs';
+import {fontPlan,fontFiles,contains} from './pdf-fonts.mjs';
+import {inspectFont,checkEmbedding} from './font-file.mjs';
 
-const adaptor=liteAdaptor();
-RegisterHTMLHandler(adaptor);
-const mathDocument=mathjax.document('',{
-  InputJax:new TeX({packages:AllPackages.filter(name=>!['html','require','autoload','noerrors','noundefined'].includes(name)),formatError:(_,error)=>{throw error;}}),
-  OutputJax:new SVG({fontCache:'none'}),
-});
 const parser=createMarkdown();
 const fontCache=new Map();
-const mathCache=new Map();
+let mathModule,mathReady;
+function loadMath(){
+  if(!mathReady){let timeout;mathReady=Promise.race([import(new URL('./pdf-math.js',import.meta.url).href),new Promise((_,reject)=>timeout=setTimeout(()=>reject(new Error()),45000))]).then(module=>mathModule=module).catch(()=>{mathReady=null;throw new Error('公式组件未能加载，请检查连接后重试。');}).finally(()=>clearTimeout(timeout));}
+  return mathReady;
+}
+const formula=(...args)=>mathModule.formula(...args);
 const opening=/[（(《〈「『【〔\[]$/;
 const closing=/^[，。！？；：、）》〉」』】〕\])…,.!?;:%‰]/;
 const mm=value=>value*72/25.4;
@@ -70,38 +63,29 @@ async function loadFonts(descriptors,progress) {
   return new Map(unique.map((descriptor,index)=>[descriptor.file,buffers[index]]));
 }
 
-function formula(text,display,size) {
-  const key=JSON.stringify([text,display]);
-  if(!mathCache.has(key)){
-    try{
-      mathDocument.inputJax[0].parseOptions.tags.reset();
-      const result=mathDocument.convert(text,{display,em:1000,ex:442,containerWidth:80000});
-      const svgNode=adaptor.firstChild(result);
-      let svg=adaptor.outerHTML(svgNode).replace(/currentColor/g,'#20242b');
-      if(/data-mjx-error|<merror/.test(svg))throw new Error('公式包含不支持的命令');
-      const box=(svg.match(/viewBox="([^"]+)"/)?.[1]||'0 0 1000 1000').split(/\s+/).map(Number);
-      mathCache.set(key,{svg,box});
-      if(mathCache.size>1000)mathCache.delete(mathCache.keys().next().value);
-    }catch(error){throw new Error(`公式无法导出：${text.slice(0,70)}（${error.message}）`);}
-  }
-  const {svg,box}=mathCache.get(key);
-  return {kind:'math',svg,w:box[2]/1000*size,above:Math.max(0,-box[1])/1000*size,below:Math.max(0,box[1]+box[3])/1000*size,size};
-}
-
 async function createPdf(job,progress) {
   const settings=normalizeSettings(job.settings);
   const tokens=indexSource(parser.lexer(job.source),job.source),plan=fontPlan(tokens,job.source,settings);
-  const loaded=await loadFonts(settings.font==='custom'?[plan.mono]:[plan.regular,plan.bold,plan.mono],progress);
-  const fontData=settings.font==='custom'?Buffer.from(job.customFont||[]):loaded.get(plan.regular.file);
-  const boldData=settings.font==='custom'?fontData:(plan.bold?loaded.get(plan.bold.file):fontData);
+  const [loaded]=await Promise.all([loadFonts(fontFiles(plan),progress),plan.math?loadMath():null]);
+  const local=['custom','yahei'].includes(settings.font);
+  const fontData=local?Buffer.from(job.customFont||[]):loaded.get(plan.regular[0].file);
   const monoData=plan.mono?loaded.get(plan.mono.file):null;
   // Register the named font before loading it. Loading the same bytes as the
   // constructor's default prevents PDFKit from caching the Body alias.
   const doc=new PDFDocument({font:null,autoFirstPage:false,bufferPages:true,compress:true,pdfVersion:'1.7',info:{Title:settings.title||settings.filename,Author:'',Creator:"Meze's Blog · Markdown Tools"}});
   const chunks=[];
   const finished=new Promise((resolve,reject)=>{doc.on('data',chunk=>chunks.push(chunk));doc.on('end',()=>resolve(Buffer.concat(chunks)));doc.on('error',reject);});
-  try{doc.registerFont('Body',fontData);doc.registerFont('BodyBold',boldData);if(monoData)doc.registerFont('Mono',monoData);doc.font('Body');}
-  catch{throw new Error('无法读取字体，请使用有效的 .ttf / .otf 字体文件。');}
+  const regularFonts=[],boldFonts=[],fontChoice=new Map();
+  try{
+    const register=(descriptors,prefix,target)=>descriptors.forEach((descriptor,index)=>{const name=index?prefix+index:prefix;doc.registerFont(name,loaded.get(descriptor.file));target.push({name,coverage:descriptor.coverage});});
+    if(local){
+      const face=inspectFont(fontData,job.customFontName);checkEmbedding(face);doc.registerFont('Body',fontData,face.name);regularFonts.push({name:'Body'});
+      if(job.customBoldFont){const data=Buffer.from(job.customBoldFont),bold=inspectFont(data,job.customBoldFontName);checkEmbedding(bold);doc.registerFont('BodyBold',data,bold.name);boldFonts.push({name:'BodyBold'});}
+    }
+    else {register(plan.regular,'Body',regularFonts);register(plan.bold,'BodyBold',boldFonts);}
+    if(monoData)doc.registerFont('Mono',monoData);doc.font('Body');
+  }
+  catch(error){throw new Error('无法读取字体，请使用有效的 .ttf、.otf 或 .ttc 字体文件。');}
   const warnings=new Set();
   const missingGlyphs=new Set();
   const fontMetrics=new Map();
@@ -111,6 +95,12 @@ async function createPdf(job,progress) {
   const codeCache=new WeakMap();
   const sourceMap=[];
   const baseSize=settings.fontSize;
+  const syntheticBold=local&&!boldFonts.length;
+  function bodyFace(text,bold){
+    const faces=bold&&boldFonts.length?boldFonts:regularFonts,key=(bold?'b':'r')+text;
+    if(!fontChoice.has(key)){const points=[...text].map(character=>character.codePointAt(0));fontChoice.set(key,(faces.find(face=>!face.coverage||points.every(point=>contains(face.coverage,point)))||faces[0]).name);}
+    return fontChoice.get(key);
+  }
   let cursor=0,pageWidth=0,pageHeight=0,left=0,right=0,top=0,bottom=0,pageCount=0;
   function newPage(){
     doc.addPage({size:settings.paper,layout:settings.orientation,margin:0});pageCount++;
@@ -130,7 +120,7 @@ async function createPdf(job,progress) {
   }
   function textUnit(text,style={},span){
     const size=style.size||baseSize;
-    const bodyFont=style.bold&&settings.font!=='custom'?'BodyBold':'Body';
+    const bodyFont=bodyFace(text,style.bold);
     let font=style.code?'Mono':bodyFont;
     if(style.code&&/[^\x00-\x7f]/.test(text))font=bodyFont;
     doc.font(font);
@@ -227,10 +217,7 @@ async function createPdf(job,progress) {
     return {above,below,height:Math.max(size*(code?1.6:settings.lineHeight),above+below+size*.13)};
   }
   function drawFormula(unit,x,y){
-    // SVG-to-PDFKit honors root dimensions before its viewport options. Convert ex
-    // dimensions to the exact measured PDF size to keep inline baselines aligned.
-    const svg=unit.svg.replace(/\bwidth="[^"]*"/,`width="${unit.w}"`).replace(/\bheight="[^"]*"/,`height="${unit.above+unit.below}"`);
-    SVGtoPDF(doc,svg,x,y,{width:unit.w,height:unit.above+unit.below,assumePt:true,fontCallback:()=> 'Body',warningCallback:message=>{if(/unsupported|not found/i.test(message))warnings.add('部分公式样式未被 PDF 引擎支持');}});
+    mathModule.drawFormula(doc,unit,x,y,warnings,bodyFace);
   }
   function drawLine(line,x,y,available,{size=baseSize,code=false,align='left',quote=false,map=true}={}){
     const metrics=lineMetrics(line,size,code);
@@ -250,8 +237,8 @@ async function createPdf(job,progress) {
         const style=unit.style;
         if(style.code&&!code)doc.save().roundedRect(x-1,baseline-unit.above-1,unit.w+2,unit.above+unit.below+2,2).fill('#f1f2f4').restore();
         doc.font(unit.font).fontSize(unit.size).fillColor(style.color||'#262a31');
-        if(style.bold&&settings.font==='custom')doc.strokeColor(style.color||'#262a31').lineWidth(.18);
-        doc.text(unit.text,x,baseline-unit.above,{lineBreak:false,textWidth:unit.w,features:unit.font==='Mono'?codeFeatures:undefined,oblique:style.italic?10:0,underline:Boolean(style.link),fill:true,stroke:Boolean(style.bold&&settings.font==='custom')});
+        if(style.bold&&syntheticBold)doc.strokeColor(style.color||'#262a31').lineWidth(.18);
+        doc.text(unit.text,x,baseline-unit.above,{lineBreak:false,textWidth:unit.w,features:unit.font==='Mono'?codeFeatures:undefined,oblique:style.italic?10:0,underline:Boolean(style.link),fill:true,stroke:Boolean(style.bold&&syntheticBold)});
         if(style.link)doc.link(x,baseline-unit.above,unit.w,unit.above+unit.below,style.link);
         if(style.strike)doc.save().lineWidth(.5).strokeColor(style.color||'#262a31').moveTo(x,baseline-unit.size*.3).lineTo(x+unit.w,baseline-unit.size*.3).stroke().restore();
       }else if(unit.kind==='math'){
@@ -293,14 +280,13 @@ async function createPdf(job,progress) {
     const result=originalLines.flatMap(line=>wrap(line,right-left-indent-20));
     cache.set(indent,result);return result;
   }
-  function codeHeight(token,indent){return codeLines(token,indent).reduce((sum,line)=>sum+lineMetrics(line,settings.codeFontSize,true).height,0)+(token.lang?settings.codeFontSize*2.1:0)+10;}
+  function codeHeight(token,indent){return codeLines(token,indent).reduce((sum,line)=>sum+lineMetrics(line,settings.codeFontSize,true).height,0)+10;}
   async function codeBlock(token,indent){
     const size=settings.codeFontSize,x=left+indent,available=right-x-20;
     const totalHeight=codeHeight(token,indent);
     if(totalHeight<(bottom-top)*.65)ensure(totalHeight);
     cursor+=3;
     anchor(token.sourceStart);
-    if(token.lang){ensure(size*2.1);doc.save().rect(x,cursor,right-x,size*2.1).fill('#f0f1f4').restore();drawLine([textUnit(token.lang.split(/\s/)[0],{size:8,color:'#777d85'})],x+10,cursor,right-x-20,{size:8});cursor+=size*2.1;}
     for(const line of codeLines(token,indent)){
         const height=lineMetrics(line,size,true).height;ensure(height);
         doc.save().rect(x,cursor,right-x,height+.2).fill('#f4f5f7').restore();
@@ -414,9 +400,10 @@ async function createPdf(job,progress) {
     doc.switchToPage(page);doc.font('Body').fontSize(8).fillColor('#7c818a');
     if(settings.pageNumbers){const label=`${page+1} / ${pages.count}`;doc.text(label,(pageWidth-width(label,'Body',8))/2,pageHeight-mm(settings.marginBottom)/2-4,{lineBreak:false});}
     if(settings.header){
-      let header=settings.header;while(header.length&&width(header,'Body',8)>right-left)header=header.slice(0,-1);
-      if(header!==settings.header)header=header.slice(0,-1)+'…';
-      doc.text(header,left,mm(settings.marginTop)/2-4,{lineBreak:false});
+      const units=unitsFromText(settings.header,{size:8,color:'#7c818a'});let total=units.reduce((sum,unit)=>sum+unit.w,0),trimmed=false;
+      while(units.length&&total>right-left-8){total-=units.pop().w;trimmed=true;}
+      if(trimmed)units.push(...unitsFromText('…',{size:8,color:'#7c818a'}));
+      drawLine(units,left,mm(settings.marginTop)/2-8,right-left,{size:8,map:false});
     }
   }
   doc.end();const buffer=await finished;
@@ -427,9 +414,9 @@ let queue=Promise.resolve();
 self.onmessage=({data})=>{
   if(data.type==='warmup'){
     const settings=normalizeSettings(data.settings);
-    if(settings.font!=='custom'){
+    if(!['custom','yahei'].includes(settings.font)){
       const plan=fontPlan(parser.lexer(data.source||''),data.source||'',settings,{warmup:true});
-      loadFonts([plan.regular,plan.bold,plan.mono]).catch(()=>{});
+      loadFonts(fontFiles(plan)).catch(()=>{});if(plan.math)loadMath().catch(()=>{});
     }
     return;
   }
