@@ -10,6 +10,7 @@ import {AllPackages} from 'mathjax-full/js/input/tex/AllPackages.js';
 import {createMarkdown,normalizeSettings} from './core.mjs';
 import {codeSpans} from './syntax.mjs';
 import {indexSource,monotonicPoints} from './source-map.mjs';
+import {fontPlan} from './pdf-fonts.mjs';
 
 const adaptor=liteAdaptor();
 RegisterHTMLHandler(adaptor);
@@ -29,13 +30,44 @@ const graphemes=new Intl.Segmenter('zh-CN',{granularity:'grapheme'});
 const codeFeatures={liga:false,calt:false,dlig:false};
 const safeUrl=url=>/^(?:https?:|mailto:|#)/i.test(url||'');
 
-async function loadFont(filename) {
-  if(!fontCache.has(filename))fontCache.set(filename,(async()=>{
-    const response=await fetch(new URL(`./fonts-pdf/${filename}`,import.meta.url));
-    if(!response.ok)throw new Error('中文字体未能加载，请检查连接后重试。');
-    return Buffer.from(await response.arrayBuffer());
-  })().catch(error=>{fontCache.delete(filename);throw error;}));
-  return fontCache.get(filename);
+async function loadFont(descriptor,listener) {
+  const filename=descriptor.file;
+  if(!fontCache.has(filename)){
+    const entry={loaded:0,listeners:new Set()};
+    fontCache.set(filename,entry);
+    entry.promise=(async()=>{
+      const controller=new AbortController();let timeout;
+      const watch=()=>{clearTimeout(timeout);timeout=setTimeout(()=>controller.abort(new DOMException('Font download stalled','TimeoutError')),45000);};
+      watch();
+      try {
+        const response=await fetch(new URL(`./fonts-pdf/${filename}`,import.meta.url),{signal:controller.signal});
+        if(!response.ok)throw new Error('排版字体未能加载，请检查连接后重试。');
+        let buffer;
+        if(response.body?.getReader){
+          const reader=response.body.getReader(),chunks=[];
+          while(true){const {done,value}=await reader.read();if(done)break;watch();chunks.push(Buffer.from(value));entry.loaded+=value.byteLength;for(const callback of entry.listeners)callback();}
+          buffer=Buffer.concat(chunks);
+        }else buffer=Buffer.from(await response.arrayBuffer());
+        entry.loaded=buffer.length;for(const callback of entry.listeners)callback();
+        return buffer;
+      }finally{clearTimeout(timeout);}
+    })().catch(error=>{fontCache.delete(filename);throw new Error(error.name==='TimeoutError'?'字体下载超时，请检查连接后重试。':error.message);});
+  }
+  const entry=fontCache.get(filename);
+  entry.listeners.add(listener);listener();
+  try{return await entry.promise;}finally{entry.listeners.delete(listener);}
+}
+async function loadFonts(descriptors,progress) {
+  const unique=[...new Map(descriptors.filter(Boolean).map(value=>[value.file,value])).values()];
+  const total=unique.reduce((sum,value)=>sum+value.bytes,0);let reported=-Infinity;
+  const report=()=>{
+    if(!progress)return;
+    const loaded=unique.reduce((sum,value)=>sum+Math.min(value.bytes,fontCache.get(value.file)?.loaded||0),0);
+    if(performance.now()-reported<160&&loaded<total)return;reported=performance.now();
+    progress(`正在加载排版字体（${(loaded/1048576).toFixed(2)} / ${(total/1048576).toFixed(2)} MB）…`);
+  };
+  const buffers=await Promise.all(unique.map(descriptor=>loadFont(descriptor,report)));
+  return new Map(unique.map((descriptor,index)=>[descriptor.file,buffers[index]]));
 }
 
 function formula(text,display,size) {
@@ -58,19 +90,17 @@ function formula(text,display,size) {
 
 async function createPdf(job,progress) {
   const settings=normalizeSettings(job.settings);
-  progress('正在加载所选字体…');
-  const family=settings.font==='serif'?'NotoSerifSC':'NotoSansSC';
-  const [fontData,boldData,monoData]=await Promise.all([
-    settings.font==='custom'?Buffer.from(job.customFont||[]):loadFont(`${family}-Regular.otf`),
-    settings.font==='custom'?Buffer.from(job.customFont||[]):loadFont(`${family}-Bold.otf`),
-    loadFont('JetBrainsMono-Regular.ttf'),
-  ]);
+  const tokens=indexSource(parser.lexer(job.source),job.source),plan=fontPlan(tokens,job.source,settings);
+  const loaded=await loadFonts(settings.font==='custom'?[plan.mono]:[plan.regular,plan.bold,plan.mono],progress);
+  const fontData=settings.font==='custom'?Buffer.from(job.customFont||[]):loaded.get(plan.regular.file);
+  const boldData=settings.font==='custom'?fontData:(plan.bold?loaded.get(plan.bold.file):fontData);
+  const monoData=plan.mono?loaded.get(plan.mono.file):null;
   // Register the named font before loading it. Loading the same bytes as the
   // constructor's default prevents PDFKit from caching the Body alias.
   const doc=new PDFDocument({font:null,autoFirstPage:false,bufferPages:true,compress:true,pdfVersion:'1.7',info:{Title:settings.title||settings.filename,Author:'',Creator:"Meze's Blog · Markdown Tools"}});
   const chunks=[];
   const finished=new Promise((resolve,reject)=>{doc.on('data',chunk=>chunks.push(chunk));doc.on('end',()=>resolve(Buffer.concat(chunks)));doc.on('error',reject);});
-  try{doc.registerFont('Body',fontData);doc.registerFont('BodyBold',boldData);doc.registerFont('Mono',monoData);doc.font('Body');}
+  try{doc.registerFont('Body',fontData);doc.registerFont('BodyBold',boldData);if(monoData)doc.registerFont('Mono',monoData);doc.font('Body');}
   catch{throw new Error('无法读取字体，请使用有效的 .ttf / .otf 字体文件。');}
   const warnings=new Set();
   const missingGlyphs=new Set();
@@ -376,7 +406,7 @@ async function createPdf(job,progress) {
   }
   newPage();
   if(right-left<baseSize*4||bottom-top<baseSize*4)throw new Error('纸张可用区域过小，请减小字号或页边距。');
-  await blocks(indexSource(parser.lexer(job.source),job.source));
+  await blocks(tokens);
   anchor(job.source.length);
   if(missingGlyphs.size)warnings.add(`所选字体缺少字符：${[...missingGlyphs].slice(0,8).join('')}，请更换字体`);
   const pages=doc.bufferedPageRange();
@@ -395,9 +425,18 @@ async function createPdf(job,progress) {
 
 let queue=Promise.resolve();
 self.onmessage=({data})=>{
+  if(data.type==='warmup'){
+    const settings=normalizeSettings(data.settings);
+    if(settings.font!=='custom'){
+      const plan=fontPlan(parser.lexer(data.source||''),data.source||'',settings,{warmup:true});
+      loadFonts([plan.regular,plan.bold,plan.mono]).catch(()=>{});
+    }
+    return;
+  }
   queue=queue.then(async()=>{
     const progress=message=>self.postMessage({id:data.id,type:'progress',message});
     try{const result=await createPdf(data,progress);self.postMessage({id:data.id,type:'result',...result},[result.buffer]);}
     catch(error){self.postMessage({id:data.id,type:'error',message:error.message||'PDF 生成失败，请检查文稿后重试。'});}
   });
 };
+self.postMessage({type:'ready'});

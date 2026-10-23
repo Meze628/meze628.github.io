@@ -1,6 +1,8 @@
 {{ define "main" }}
 <link rel="stylesheet" href="{{ "tools-assets/katex.min.css" | relURL }}">
 <link rel="stylesheet" href="{{ "tools-assets/tools.css" | relURL }}">
+<link rel="modulepreload" href="{{ "tools-assets/tools.js" | relURL }}">
+{{ if eq .Params.tool "markdown" }}<link rel="prefetch" href="{{ "tools-assets/pdf-worker.js" | relURL }}" as="script">{{ end }}
 <section class="tools-shell" data-meze-tool="{{ .Params.tool }}" aria-label="{{ .Title }}">
   <div class="tool-editor-frame" {{ if .Site.Params.animation.enable }}data-aos="{{ .Site.Params.animation.options.article.whole }}"{{ end }}>
   <header class="tool-heading">
@@ -17,7 +19,7 @@
   </div>
   <div class="workspace-controls"><label class="code-option"><input type="checkbox" id="protect-code" checked> 跳过代码</label>{{ partial "tools/fullscreen-button.html" . }}</div>
   <div class="tool-workspace latex-workspace">
-    <section class="tool-pane"><div class="pane-heading"><label for="tool-source">原始文稿</label><span class="pane-meta" data-source-count></span></div><textarea id="tool-source" class="tool-editor" spellcheck="false" placeholder="在这里粘贴含数学公式的 Markdown…"></textarea></section>
+    <section class="tool-pane"><div class="pane-heading"><label for="tool-source">原始文稿</label><span class="pane-meta" data-source-count></span></div><textarea id="tool-source" class="tool-editor" spellcheck="false" placeholder="在这里粘贴含数学公式的 Markdown…">{{ readFile "tools-src/examples/latex.md" }}</textarea></section>
     <section class="tool-pane"><div class="pane-heading"><label for="tool-result">转换结果</label><div class="pane-actions"><button type="button" class="tool-icon-button" data-action="copy" title="复制" aria-label="复制转换结果">{{ partial "tools/icon.html" "copy" }}</button><button type="button" class="tool-icon-button" data-action="download-text" title="下载" aria-label="下载转换结果">{{ partial "tools/icon.html" "download" }}</button></div></div><textarea id="tool-result" class="tool-editor" readonly spellcheck="false" placeholder="转换结果会显示在这里…"></textarea></section>
   </div>
   {{ else }}
@@ -27,7 +29,7 @@
   </div>
   {{ partial "tools/pdf-settings.html" . }}
   <div class="tool-workspace markdown-workspace">
-    <section class="tool-pane source-pane"><div class="pane-heading"><label for="tool-source">Markdown 源码</label><div class="pane-actions"><span class="pane-meta" data-source-count></span><button class="tool-button tool-button-small" type="button" data-action="clear">清空</button></div></div><textarea id="tool-source" class="tool-editor" spellcheck="false" placeholder="开始写作，或者拖入一个 .md 文件…" aria-label="Markdown 源码"></textarea></section>
+    <section class="tool-pane source-pane"><div class="pane-heading"><label for="tool-source">Markdown 源码</label><div class="pane-actions"><span class="pane-meta" data-source-count></span><button class="tool-button tool-button-small" type="button" data-action="clear">清空</button></div></div><textarea id="tool-source" class="tool-editor" spellcheck="false" placeholder="开始写作，或者拖入一个 .md 文件…" aria-label="Markdown 源码">{{ readFile "tools-src/examples/markdown.md" }}</textarea></section>
     <section class="tool-pane preview-pane"><div class="pane-heading"><div class="preview-tabs" role="tablist" aria-label="预览类型"><button class="tool-button tool-button-small preview-tab is-active" type="button" id="tab-markdown" role="tab" aria-selected="true" aria-controls="markdown-preview" data-view="markdown">Markdown 预览</button><button class="tool-button tool-button-small preview-tab" type="button" id="tab-pdf" role="tab" aria-selected="false" aria-controls="pdf-preview" data-view="pdf" tabindex="-1">PDF 预览</button></div><button class="tool-button tool-button-small" type="button" data-action="refresh-pdf" hidden>更新预览</button></div><div id="markdown-preview" class="md-preview article-entry" role="tabpanel" aria-labelledby="tab-markdown" tabindex="0"></div><div id="pdf-preview" class="pdf-preview" role="tabpanel" aria-labelledby="tab-pdf" hidden><div class="pdf-placeholder"><span class="pdf-paper-icon" aria-hidden="true">PDF</span><button class="tool-button tool-button-primary tool-button-lift" type="button" data-action="generate-pdf">生成 PDF 预览</button></div><div class="pdf-pages" hidden></div><div class="pdf-stale" hidden><span>预览待更新</span><button type="button" class="tool-button tool-button-small" data-action="refresh-pdf">更新预览</button></div></div></section>
   </div>
   {{ end }}
@@ -37,5 +39,6 @@
   <div class="tool-status" role="status" aria-live="polite" data-status hidden></div>
   <noscript><p class="tool-error">请启用 JavaScript 后使用这些工具。</p></noscript>
 </section>
+{{ partial "tools/bootstrap.html" . }}
 <script data-pjax>import('{{ "tools-assets/tools.js" | relURL }}').then(module => module.mountTools()).catch(() => { const el = document.querySelector('[data-status]'); if (el) { el.hidden = false; el.textContent = '工具未能加载，请刷新页面重试。'; } });</script>
 {{ end }}

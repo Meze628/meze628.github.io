@@ -44,10 +44,10 @@ export function mountTools() {
   let settings = normalizeSettings(saved?.settings);
   if (settings.font === 'custom') settings.font = 'sans';
   let direction = saved?.direction === 'bracket' ? 'bracket' : 'dollar';
-  let statusTimer, inputTimer, worker, pdfUrl, pdfSnapshot, pendingPdf, customFont;
+  let statusTimer, inputTimer, worker, workerReady=false, engineTimer, warmupTimer, pdfUrl, pdfSnapshot, pendingPdf, customFont;
   let nextJob = 0;
   let activeJob = null;
-  let viewerUrl,viewerVersion=0,disposePdfViewer,pdfSourceMap=[];
+  let viewerUrl,viewerVersion=0,disposePdfViewer,pdfSourceMap=[],viewerModule;
   let previousReplacement = null;
   let fullscreen = false, previousScroll = 0;
   let inertElements = [];
@@ -133,7 +133,7 @@ export function mountTools() {
   });
   on(window,'pagehide',()=>setFullscreen(false));
 
-  source.value = typeof saved?.source === 'string' ? saved.source : (kind==='latex' ? LATEX_EXAMPLE : MARKDOWN_EXAMPLE).replaceAll('\\u0060','`');
+  if(!root.dataset.bootstrapped)source.value = typeof saved?.source === 'string' ? saved.source : (kind==='latex' ? LATEX_EXAMPLE : MARKDOWN_EXAMPLE).replaceAll('\\u0060','`');
   on(source,'input',() => handleInput());
   on(source,'keydown',event => {
     if (event.key === 'Tab') {
@@ -184,12 +184,15 @@ export function mountTools() {
     if(view==='pdf'&&pdfUrl)showPdfPreview().catch(error=>notify(error.message,true));
     scrollSync.align();
   }
+  function preparePdfViewer(){
+    return viewerModule||=import(new URL('./pdf-viewer.js',import.meta.url).href).catch(error=>{viewerModule=null;throw error;});
+  }
   async function showPdfPreview(){
     if(!pdfUrl||viewerUrl===pdfUrl)return;
     const url=pdfUrl,current=++viewerVersion;viewerUrl=url;
     const host=query('.pdf-pages');host.hidden=false;query('.pdf-placeholder').hidden=true;
     try {
-      const module=await import(new URL('./pdf-viewer.js',import.meta.url).href);
+      const module=await preparePdfViewer();
       const bytes=await(await fetch(url)).arrayBuffer();
       if(!root.isConnected||current!==viewerVersion)return;
       disposePdfViewer?.();disposePdfViewer=null;
@@ -202,12 +205,13 @@ export function mountTools() {
     if (worker) return worker;
     worker = new Worker(new URL('./pdf-worker.js',import.meta.url),{type:'module'});
     worker.onmessage=({data}) => {
+      if(data.type==='ready'){workerReady=true;clearTimeout(engineTimer);return;}
       if (data.id!==activeJob?.id) return;
       if (data.type==='progress') notify(data.message,false,true);
       if (data.type==='result') {activeJob.resolve(data);activeJob=null;}
       if (data.type==='error') {activeJob.reject(new Error(data.message));activeJob=null;}
     };
-    worker.onerror=event => {console.error('PDF worker:',event.message,event.filename,event.lineno);activeJob?.reject(new Error(`PDF 引擎未能启动：${event.message||'请刷新页面后重试'}`));activeJob=null;worker?.terminate();worker=null;};
+    worker.onerror=event => {console.error('PDF worker:',event.message,event.filename,event.lineno);clearTimeout(engineTimer);activeJob?.reject(new Error(`PDF 引擎未能启动：${event.message||'请刷新页面后重试'}`));activeJob=null;worker?.terminate();worker=null;workerReady=false;};
     return worker;
   }
   async function generatePdf() {
@@ -222,6 +226,10 @@ export function mountTools() {
     pendingPdf=(async () => {
       const started=performance.now();
       const engine=getWorker();
+      if(!workerReady){
+        notify('正在加载 PDF 引擎…',false,true);
+        clearTimeout(engineTimer);engineTimer=setTimeout(()=>{if(!workerReady){activeJob?.reject(new Error('PDF 引擎加载超时，请检查连接后重试。'));activeJob=null;worker?.terminate();worker=null;}},45000);
+      }
       const result=await new Promise((resolve,reject) => {
         const id=++nextJob;activeJob={id,resolve,reject};
         engine.postMessage({id,source:snapshot.source,settings:{...settings},customFont});
@@ -242,6 +250,7 @@ export function mountTools() {
   async function runPdf(download=false) {
     const buttons=root.querySelectorAll('[data-action="download-pdf"],[data-action="generate-pdf"],[data-action="refresh-pdf"]');
     buttons.forEach(button=>button.disabled=true);root.setAttribute('aria-busy','true');notify('正在准备 PDF…',false,true);
+    if(!download)preparePdfViewer().catch(()=>{});
     const name=safeFilename(settings.filename);
     try {
       const result=await generatePdf();if (!result) return;
@@ -336,7 +345,8 @@ export function mountTools() {
     on(query('.preview-tabs'),'keydown',event=>{if(!['ArrowLeft','ArrowRight'].includes(event.key))return;event.preventDefault();const view=query('[data-view="markdown"]').getAttribute('aria-selected')==='true'?'pdf':'markdown';setView(view);query(`[data-view="${view}"]`).focus();});
   }
   handleInput(true);
-  disposeCurrent=()=>{selectFields.close();setFullscreen(false);persist();controller.abort();clearTimeout(statusTimer);clearTimeout(inputTimer);worker?.terminate();viewerVersion++;disposePdfViewer?.();if(pdfUrl)URL.revokeObjectURL(pdfUrl);};
+  if(kind==='markdown')warmupTimer=setTimeout(()=>{if(root.isConnected&&!signal.aborted)getWorker().postMessage({type:'warmup',source:source.value.slice(0,50000),settings});},1200);
+  disposeCurrent=()=>{selectFields.close();setFullscreen(false);persist();controller.abort();clearTimeout(statusTimer);clearTimeout(inputTimer);clearTimeout(engineTimer);clearTimeout(warmupTimer);worker?.terminate();viewerVersion++;disposePdfViewer?.();if(pdfUrl)URL.revokeObjectURL(pdfUrl);};
 }
 
 document.addEventListener('pjax:complete',()=>{if(!document.querySelector('[data-meze-tool]')){disposeCurrent?.();disposeCurrent=null;}else mountTools();});

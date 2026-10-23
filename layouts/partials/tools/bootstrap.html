@@ -1,0 +1,29 @@
+<script data-pjax>
+(() => {
+  const root = document.querySelector('[data-meze-tool]');
+  if (!root || root.dataset.bootstrapped) return;
+  root.dataset.bootstrapped = 'true';
+  const source = root.querySelector('#tool-source');
+  const name = root.querySelector('#document-name');
+  const count = root.querySelector('[data-source-count]');
+  const key = 'meze.tools.' + root.dataset.mezeTool + '.v1';
+  try {
+    const saved = JSON.parse(localStorage.getItem(key));
+    if (typeof saved?.source === 'string') source.value = saved.source;
+    if (name && typeof saved?.settings?.filename === 'string') name.value = saved.settings.filename;
+  } catch {}
+  const update = () => {
+    count.textContent = source.value.length.toLocaleString() + ' 字符';
+    if (root.dataset.initialized) return;
+    try {
+      const saved = JSON.parse(localStorage.getItem(key)) || {};
+      saved.source = source.value;
+      if (name) saved.settings = {...saved.settings, filename:name.value};
+      localStorage.setItem(key, JSON.stringify(saved));
+    } catch {}
+  };
+  update();
+  source.addEventListener('input', update);
+  name?.addEventListener('input', update);
+})();
+</script>
