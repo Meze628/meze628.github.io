@@ -1,7 +1,7 @@
 <section class="pdf-settings" id="pdf-settings" aria-label="PDF 排版设置" hidden>
   <div class="settings-heading"><h2>PDF 排版</h2><button type="button" class="tool-button tool-button-small" data-action="reset-settings">恢复默认</button></div>
   <div class="settings-grid">
-    {{ partial "tools/select-field.html" (dict "label" "正文字体" "name" "font" "options" (slice (dict "value" "sans" "label" "思源黑体") (dict "value" "serif" "label" "思源宋体") (dict "value" "yahei" "label" "微软雅黑（本机）") (dict "value" "custom" "label" "导入字体文件…"))) }}
+    {{ partial "tools/select-field.html" (dict "label" "正文字体" "name" "font" "options" (slice (dict "value" "sans" "label" "思源黑体") (dict "value" "serif" "label" "思源宋体") (dict "value" "yahei" "label" "微软雅黑") (dict "value" "custom" "label" "导入字体文件…"))) }}
     {{ partial "tools/number-field.html" (dict "label" "正文字号" "unit" "pt" "name" "fontSize" "min" 8 "max" 28 "step" 0.5 "value" 12) }}
     {{ partial "tools/number-field.html" (dict "label" "行间距" "unit" "倍" "name" "lineHeight" "min" 1 "max" 3 "step" 0.05 "value" 1.65) }}
     {{ partial "tools/number-field.html" (dict "label" "段后间距" "unit" "pt" "name" "paragraphGap" "min" 0 "max" 40 "step" 1 "value" 7) }}
@@ -17,5 +17,5 @@
     <label class="settings-checkbox"><input type="checkbox" data-setting="pageNumbers" checked> 显示页码</label>
   </div>
   <div class="custom-font-control" hidden><label for="custom-font-file">导入字体文件</label><input type="file" id="custom-font-file" accept=".ttf,.otf,.ttc"><span data-font-name></span></div>
-  <div class="yahei-font-control" hidden><button type="button" class="tool-button tool-button-small" data-action="read-yahei">读取本机字体</button><button type="button" class="tool-button tool-button-small" data-action="import-yahei">选择字体文件</button><input type="file" id="yahei-font-file" accept=".ttf,.otf,.ttc" multiple hidden><span data-yahei-font-name></span></div>
+  <div class="yahei-font-control" hidden><span data-yahei-font-name role="status">选择后自动读取系统字体</span><button type="button" class="tool-button tool-button-small" data-action="read-yahei" hidden>重试读取</button><button type="button" class="tool-button tool-button-small" data-action="import-yahei" hidden>选择字体文件</button><input type="file" id="yahei-font-file" accept=".ttf,.otf,.ttc" multiple hidden></div>
 </section>
