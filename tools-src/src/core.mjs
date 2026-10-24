@@ -1,4 +1,4 @@
-import { Marked, Renderer } from 'marked';
+import { Marked, Renderer, Tokenizer } from 'marked';
 import {mappedHtml} from './source-map.mjs';
 
 export const escapeHtml = text => String(text).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -128,7 +128,20 @@ export function convertDelimiters(source, direction = 'dollar', includeDisplay =
 
 export function createMarkdown(renderMath) {
   const parser = new Marked({ gfm: true, breaks: false });
+  const tokenizers={};
+  for(const name of ['heading','lheading'])tokenizers[name]=function(source){
+    const token=Tokenizer.prototype[name].call(this,source);
+    if(!token)return;
+    const alignment=token.text.match(/\s+\{\s*align\s*=\s*(?:"(left|center|right)"|'(left|center|right)'|(left|center|right))\s*\}\s*$/i);
+    if(alignment){
+      token.text=token.text.slice(0,alignment.index).trimEnd();
+      token.align=alignment.slice(1).find(Boolean).toLowerCase();
+      token.tokens=this.lexer.inline(token.text);
+    }
+    return token;
+  };
   parser.use({
+    tokenizer:tokenizers,
     extensions: [
       {
         name: 'mathBlock', level: 'block',
@@ -167,7 +180,11 @@ export function createMarkdown(renderMath) {
     },
   });
   const renderers={};
-  for(const name of ['heading','paragraph','blockquote','list','listitem','table','hr'])renderers[name]=function(token){return mappedHtml(Renderer.prototype[name].call(this,token),token);};
+  for(const name of ['heading','paragraph','blockquote','list','listitem','table','hr'])renderers[name]=function(token){
+    let html=Renderer.prototype[name].call(this,token);
+    if(name==='heading'&&token.align)html=html.replace(/^<h([1-6])>/,`<h$1 style="text-align: ${token.align};">`);
+    return mappedHtml(html,token);
+  };
   parser.use({renderer:renderers});
   return parser;
 }
@@ -181,7 +198,7 @@ export const defaults = Object.freeze({
 
 export function normalizeSettings(settings = {}) {
   const result = {...defaults, ...settings};
-  const limits = {fontSize:[8,28], lineHeight:[1,3], paragraphGap:[0,40], headingScale:[0.75,1.8], codeFontSize:[6,22], marginTop:[8,50], marginBottom:[8,50], marginLeft:[8,50], marginRight:[8,50]};
+  const limits = {fontSize:[8,28], lineHeight:[0,3], paragraphGap:[0,40], headingScale:[0.75,1.8], codeFontSize:[6,22], marginTop:[8,50], marginBottom:[8,50], marginLeft:[8,50], marginRight:[8,50]};
   for (const [key,[min,max]] of Object.entries(limits)) {
     const value = Number(result[key]);
     result[key] = Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : defaults[key];

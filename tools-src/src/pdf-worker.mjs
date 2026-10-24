@@ -162,6 +162,7 @@ async function createPdf(job,progress) {
     const units=[];
     for(const token of tokens||[]){
       switch(token.type){
+        case 'checkbox':break;
         case 'text': case 'escape':
           if(token.tokens)units.push(...await inline(token.tokens,style));
           else units.push(...unitsFromText(decode(token.text).replace(/\s*\n\s*/g,' '),style,token));
@@ -214,14 +215,16 @@ async function createPdf(job,progress) {
     const normal=metric(code?'Mono':'Body',size);
     const above=Math.max(normal.above,...line.map(unit=>unit.above));
     const below=Math.max(normal.below,...line.map(unit=>unit.below));
-    return {above,below,height:Math.max(size*(code?1.6:settings.lineHeight),above+below+size*.13)};
+    const natural=above+below+size*.13,requested=size*(code?1.6:settings.lineHeight);
+    const advance=code||line.some(unit=>['math','image'].includes(unit.kind))?Math.max(requested,natural):requested;
+    return {above,below,height:Math.max(advance,natural),advance};
   }
   function drawFormula(unit,x,y){
     mathModule.drawFormula(doc,unit,x,y,warnings,bodyFace);
   }
   function drawLine(line,x,y,available,{size=baseSize,code=false,align='left',quote=false,map=true}={}){
     const metrics=lineMetrics(line,size,code);
-    if(map){anchor(line.find(unit=>Number.isFinite(unit.sourceStart))?.sourceStart,y);anchor(line.findLast(unit=>Number.isFinite(unit.sourceEnd))?.sourceEnd,y+metrics.height);}
+    if(map){anchor(line.find(unit=>Number.isFinite(unit.sourceStart))?.sourceStart,y);anchor(line.findLast(unit=>Number.isFinite(unit.sourceEnd))?.sourceEnd,y+metrics.advance);}
     const total=line.reduce((sum,unit)=>sum+unit.w,0);
     if(align==='center')x+=(available-total)/2;else if(align==='right')x+=available-total;
     const baseline=y+(metrics.height-metrics.above-metrics.below)/2+metrics.above;
@@ -248,18 +251,32 @@ async function createPdf(job,progress) {
     }
     return metrics.height;
   }
-  async function paragraph(tokens,{indent=0,prefix='',size=baseSize,bold=false,quote=false,after=settings.paragraphGap}={}){
-    const prefixWidth=prefix?Math.max(size*1.45,width(prefix,'Body',size)+5):0;
+  function listMarkerWidth(prefix,task,size){
+    return (prefix?Math.max(size*1.45,width(prefix,'Body',size)+5):0)+(task===null?0:size*1.35);
+  }
+  function drawListMarker(prefix,task,x,y,size,line=[]){
+    const prefixWidth=listMarkerWidth(prefix,null,size);
+    if(prefix)drawLine([textUnit(prefix,{size})],x,y,prefixWidth,{size});
+    if(task===null)return;
+    const side=size*.88,boxX=x+prefixWidth,boxY=y+(lineMetrics(line,size).height-side)/2;
+    doc.save().lineWidth(Math.max(.65,size*.055)).roundedRect(boxX,boxY,side,side,side*.2);
+    if(task)doc.fill('#3e4652');else doc.fillAndStroke('#f8f9fb','#aeb4bd');
+    if(task)doc.lineWidth(Math.max(1,size*.105)).lineCap('round').lineJoin('round').strokeColor('#ffffff')
+      .moveTo(boxX+side*.22,boxY+side*.5).lineTo(boxX+side*.43,boxY+side*.7).lineTo(boxX+side*.79,boxY+side*.3).stroke();
+    doc.restore();
+  }
+  async function paragraph(tokens,{indent=0,prefix='',task=null,size=baseSize,bold=false,quote=false,align='left',after=settings.paragraphGap}={}){
+    const prefixWidth=listMarkerWidth(prefix,task,size);
     const x=left+indent+prefixWidth;
     const available=right-x;
     if(available<size*1.5)throw new Error('可用行宽过小，请减小字号、列表缩进或左右页边距。');
     const lines=wrap(await inline(tokens,{size,bold}),available);
     for(let index=0;index<lines.length;index++){
-      const height=lineMetrics(lines[index],size).height;
+      const {height,advance}=lineMetrics(lines[index],size);
       if(height>bottom-top)throw new Error('文字或行内公式过高，请增大纸张或减小字号、行距和页边距。');
       ensure(height);
-      if(index===0&&prefix)drawLine([textUnit(prefix,{size})],left+indent,cursor,prefixWidth,{size});
-      drawLine(lines[index],x,cursor,available,{size,quote});cursor+=height;
+      if(index===0&&prefixWidth)drawListMarker(prefix,task,left+indent,cursor,size,lines[index]);
+      drawLine(lines[index],x,cursor,available,{size,quote,align});cursor+=index===0&&task!==null?Math.max(advance,size*.88):advance;
     }
     cursor+=after;
   }
@@ -321,24 +338,33 @@ async function createPdf(job,progress) {
     const widths=Array(columns).fill(available/columns);
     const prepare=async(row,bold)=>Promise.all(row.map(async(cell,index)=>wrap(await inline(cell.tokens,{size,bold}),widths[index]-padding*2)));
     const header=await prepare(token.header,true);
-    const rowHeights=cells=>Array.from({length:Math.max(...cells.map(cell=>cell.length))},(_,index)=>Math.max(...cells.map(cell=>lineMetrics(cell[index]||[],size).height)));
-    const headerHeight=rowHeights(header).reduce((sum,height)=>sum+height,0)+padding*2;
+    const rowMetrics=cells=>Array.from({length:Math.max(...cells.map(cell=>cell.length))},(_,index)=>{
+      const metrics=cells.map(cell=>lineMetrics(cell[index]||[],size));
+      return {height:Math.max(...metrics.map(value=>value.height)),advance:Math.max(...metrics.map(value=>value.advance))};
+    });
+    const stackHeight=metrics=>{let advance=0,height=0;for(const line of metrics){height=Math.max(height,advance+line.height);advance+=line.advance;}return Math.max(height,advance);};
+    const headerHeight=stackHeight(rowMetrics(header))+padding*2;
     const repeatHeader=headerHeight<(bottom-top)*.35;
     let isHeader=false;
     const renderRow=async(cells,heading=false)=>{
-      const heights=rowHeights(cells);let index=0;
-      if(heights.some(height=>height+padding*2>bottom-top))throw new Error('表格行高超过纸张可用区域，请减小字号、行距或页边距。');
-      while(index<heights.length){
-        if(cursor+heights[index]+padding*2>bottom){newPage();if(!heading&&repeatHeader)await renderRow(header,true);}
-        let count=0,height=padding*2;
-        while(index+count<heights.length&&cursor+height+heights[index+count]<=bottom+.01){height+=heights[index+count];count++;}
+      const metrics=rowMetrics(cells);let index=0;
+      if(metrics.some(line=>line.height+padding*2>bottom-top))throw new Error('表格行高超过纸张可用区域，请减小字号、行距或页边距。');
+      while(index<metrics.length){
+        if(cursor+metrics[index].height+padding*2>bottom){newPage();if(!heading&&repeatHeader)await renderRow(header,true);}
+        let count=0,height=padding*2,advance=0,extent=0;
+        while(index+count<metrics.length){
+          const line=metrics[index+count],nextExtent=Math.max(extent,advance+line.height),nextAdvance=advance+line.advance;
+          const nextHeight=padding*2+Math.max(nextExtent,nextAdvance);
+          if(cursor+nextHeight>bottom+.01)break;
+          extent=nextExtent;advance=nextAdvance;height=nextHeight;count++;
+        }
         if(!count){newPage();continue;}
         let x=left+indent;
         for(let column=0;column<columns;column++){
           doc.save().rect(x,cursor,widths[column],height).fillAndStroke(heading?'#f1f2f5':'#ffffff','#d9dce2').restore();
           let y=cursor+padding;
           for(let line=0;line<count;line++){
-            drawLine(cells[column]?.[index+line]||[],x+padding,y,widths[column]-padding*2,{size,align:token.align[column]||'left',map:!heading&&column===0});y+=heights[index+line];
+            drawLine(cells[column]?.[index+line]||[],x+padding,y,widths[column]-padding*2,{size,align:token.align[column]||'left',map:!heading&&column===0});y+=metrics[index+line].advance;
           }
           x+=widths[column];
         }
@@ -362,7 +388,7 @@ async function createPdf(job,progress) {
           const following=nextCodeHeight&&nextCodeHeight<(bottom-top)*.65?nextCodeHeight:baseSize*settings.lineHeight*1.5;
           cursor+=baseSize*.55;ensure(Math.min(size*1.55+following,bottom-top));
           doc.outline.addItem(decode(token.text).replace(/[*_`]/g,''));
-          await paragraph(token.tokens,{indent,size,bold:true,quote,after:baseSize*.6});break;
+          await paragraph(token.tokens,{indent,size,bold:true,quote,align:token.align||'left',after:baseSize*.6});break;
         }
         case 'paragraph':case 'text':{
           if(token.tokens?.length===1&&token.tokens[0].type==='image')await imageBlock(token.tokens[0],indent);
@@ -374,11 +400,16 @@ async function createPdf(job,progress) {
         case 'list':{
           let number=token.start||1;
           for(const item of token.items){
-            const prefix=item.task?(item.checked?'[x]':'[ ]'):(token.ordered?`${number++}.`:'•');
-            const first=item.tokens[0];
+            const task=item.task?Boolean(item.checked):null,prefix=token.ordered?`${number++}.`:(item.task?'':'•');
+            // Marked emits a separate checkbox token for compact task lists.
+            const content=item.tokens.filter(value=>value.type!=='checkbox'),first=content[0];
+            const childIndent=Math.min(indent+Math.max(baseSize*1.5,listMarkerWidth(prefix,task,baseSize)),(right-left)*.4);
             if(first&&['text','paragraph'].includes(first.type)){
-              await paragraph(first.tokens||[{type:'text',text:first.text}],{indent,prefix,quote,after:3});await blocks(item.tokens.slice(1),Math.min(indent+baseSize*1.5,(right-left)*.4),quote);
-            }else{ensure(baseSize*settings.lineHeight);drawLine([textUnit(prefix,{size:baseSize})],left+indent,cursor,baseSize*2);await blocks(item.tokens,Math.min(indent+baseSize*1.5,(right-left)*.4),quote);}
+              await paragraph(first.tokens||[{type:'text',text:first.text}],{indent,prefix,task,quote,after:Math.max(1,Math.min(3,settings.paragraphGap*.25))});await blocks(content.slice(1),childIndent,quote);
+            }else{
+              const metrics=lineMetrics([]);ensure(metrics.height);drawListMarker(prefix,task,left+indent,cursor,baseSize);
+              if(content.length)await blocks(content,childIndent,quote);else cursor+=Math.max(metrics.advance,task!==null?baseSize*.88:0)+3;
+            }
           }
           cursor+=settings.paragraphGap;break;
         }

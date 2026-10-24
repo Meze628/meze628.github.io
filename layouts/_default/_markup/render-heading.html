@@ -1,0 +1,11 @@
+{{- $align := "" -}}
+{{- with .Attributes.align -}}
+  {{- $value := lower (printf "%v" .) -}}
+  {{- if in (slice "left" "center" "right") $value -}}
+    {{- $align = $value -}}
+  {{- end -}}
+{{- end -}}
+<h{{ .Level }} id="{{ .Anchor | safeURL }}"{{ with $align }} style="text-align: {{ . }};"{{ end }}>
+<a class="header-anchor" href="#{{ .Anchor | safeURL }}"></a>
+{{ .Text | safeHTML }}
+</h{{ .Level }}>

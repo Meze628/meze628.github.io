@@ -68,3 +68,31 @@ test('配置边界不会产生无效数值',()=>{
   const value=normalizeSettings({fontSize:-100,lineHeight:'bad',paper:'INVALID',marginLeft:1000});
   assert.equal(value.fontSize,8);assert.equal(value.lineHeight,1.65);assert.equal(value.paper,'A4');assert.equal(value.marginLeft,50);
 });
+
+test('PDF 行间距保留 0 到 1 之间的小数，越界数值仍有限制',()=>{
+  for(const lineHeight of [0,.05,.5,.8,.95,1])assert.equal(normalizeSettings({lineHeight}).lineHeight,lineHeight);
+  assert.equal(normalizeSettings({lineHeight:-.1}).lineHeight,0);
+  assert.equal(normalizeSettings({lineHeight:10}).lineHeight,3);
+});
+
+test('所有级别标题支持居中属性，属性不作为正文或公式输出',()=>{
+  const parser=createMarkdown(text=>`<span class="math">${text}</span>`);
+  for(let depth=1;depth<=6;depth++){
+    for(const attribute of ['{align=center}','{align="center"}',"{align='CENTER'}"]){
+      const source='#'.repeat(depth)+' 标题 **强调** \\(x+y\\) '+attribute;
+      const tokens=parser.lexer(source),heading=tokens[0],html=parser.parser(tokens);
+      assert.equal(heading.align,'center');assert(!heading.text.includes(attribute));
+      assert.match(html,new RegExp(`<h${depth} style="text-align: center;">`));
+      assert(html.includes('<strong>强调</strong>'));assert(html.includes('<span class="math">x+y</span>'));assert(!html.includes(attribute));
+    }
+  }
+});
+
+test('普通标题、标题内代码、引用链接和不支持的属性保持原有语义',()=>{
+  const parser=createMarkdown();
+  assert.equal(parser.parse('# 普通标题'),'<h1>普通标题</h1>\n');
+  assert.match(parser.parse('# `{align=center}`'),/<h1><code>\{align=center\}<\/code><\/h1>/);
+  assert(!parser.parse('# 标题 {align="center" onclick="alert(1)"}').includes('style='));
+  assert.match(parser.parse('# [标题][target] {align=center}\n\n[target]: https://example.com'),/<h1 style="text-align: center;"><a href="https:\/\/example.com">标题<\/a><\/h1>/);
+  assert.match(parser.parse('标题 {align=center}\n===\n'),/<h1 style="text-align: center;">标题<\/h1>/);
+});

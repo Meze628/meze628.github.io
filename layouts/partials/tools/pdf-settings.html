@@ -3,7 +3,7 @@
   <div class="settings-grid">
     {{ partial "tools/select-field.html" (dict "label" "正文字体" "name" "font" "options" (slice (dict "value" "sans" "label" "思源黑体") (dict "value" "serif" "label" "思源宋体") (dict "value" "yahei" "label" "微软雅黑") (dict "value" "custom" "label" "导入字体文件…"))) }}
     {{ partial "tools/number-field.html" (dict "label" "正文字号" "unit" "pt" "name" "fontSize" "min" 8 "max" 28 "step" 0.5 "value" 12) }}
-    {{ partial "tools/number-field.html" (dict "label" "行间距" "unit" "倍" "name" "lineHeight" "min" 1 "max" 3 "step" 0.05 "value" 1.65) }}
+    {{ partial "tools/number-field.html" (dict "label" "行间距" "unit" "倍" "name" "lineHeight" "min" 0 "max" 3 "step" 0.05 "value" 1.65) }}
     {{ partial "tools/number-field.html" (dict "label" "段后间距" "unit" "pt" "name" "paragraphGap" "min" 0 "max" 40 "step" 1 "value" 7) }}
     {{ partial "tools/number-field.html" (dict "label" "标题大小" "unit" "倍" "name" "headingScale" "min" 0.75 "max" 1.8 "step" 0.05 "value" 1) }}
     {{ partial "tools/number-field.html" (dict "label" "代码字号" "unit" "pt" "name" "codeFontSize" "min" 6 "max" 22 "step" 0.5 "value" 10) }}
