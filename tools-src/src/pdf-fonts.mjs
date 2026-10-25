@@ -30,6 +30,8 @@ export function fontPlan(tokens,source,settings,{warmup=false}={}) {
     }
   }
   walk(tokens);
+  const frontMatter=tokens[0]?.type==='frontMatter'?tokens[0]:null;
+  const visibleSource=frontMatter?frontMatter.tokens.map(token=>token.text).join('\n')+source.slice(frontMatter.raw.length):source;
   const choose=(text,face,isBold=false)=>{
     let tier=fontTier(text,face);
     if(tier==='full'&&!warmup)return [face.full];
@@ -39,6 +41,6 @@ export function fontPlan(tokens,source,settings,{warmup=false}={}) {
     return [primary,...face.shards.filter(shard=>needed.some(point=>contains(shard.coverage,point)))];
   };
   const local=['custom','yahei'].includes(settings.font);
-  return {regular:local?[]:choose(source+(settings.header||''),family.regular),bold:local||!bold?[]:choose(boldText,family.bold,true),mono:mono?MONO_FONT:null,math};
+  return {regular:local?[]:choose(visibleSource+(settings.header||''),family.regular),bold:local||!bold?[]:choose(boldText,family.bold,true),mono:mono?MONO_FONT:null,math};
 }
 export const fontFiles=plan=>[...plan.regular,...plan.bold,plan.mono].filter(Boolean);

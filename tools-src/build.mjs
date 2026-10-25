@@ -16,7 +16,7 @@ await build({
 await cp(path.join(root, 'node_modules/katex/dist/fonts'), path.join(destination, 'fonts'), { recursive: true });
 await copyFile(path.join(root, 'node_modules/katex/dist/katex.min.css'), path.join(destination, 'katex.min.css'));
 await copyFile(path.join(root, 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs'), path.join(destination, 'pdfjs-worker.mjs'));
-const packages = ['marked','dompurify','highlight.js','katex','mathjax-full','pdfkit','svg-to-pdfkit','buffer','pdfjs-dist'];
+const packages = ['marked','yaml','dompurify','highlight.js','katex','mathjax-full','pdfkit','svg-to-pdfkit','buffer','pdfjs-dist'];
 const notices = [];
 for (const name of packages) {
   const packageDir = path.join(root, 'node_modules', name);

@@ -47,7 +47,7 @@ async function render(source,settings={}){
       const boxes=paths.filter(({commands,bounds:[x0,y0,x1,y1]})=>commands.at(-1)===4&&x1>x0&&Math.abs(x1-x0-(y1-y0))<.01);
       const checked=boxes.filter(box=>paths.some(path=>path.commands.length===9&&path.commands[0]===0&&path.commands[3]===1&&path.commands[6]===1&&path.bounds[0]>box.bounds[0]&&path.bounds[1]>box.bounds[1]&&path.bounds[2]<box.bounds[2]&&path.bounds[3]<box.bounds[3]));
       const items=(await page.getTextContent()).items.filter(item=>'str' in item),text=items.map(item=>item.str).join('');
-      pages.push({boxes,checked,text,items,width:page.view[2],height:page.view[3]});
+      pages.push({boxes,checked,text,items,paths,width:page.view[2],height:page.view[3]});
     }
     return pages;
   }finally{await pdf.destroy();}
@@ -70,6 +70,13 @@ test('松散任务列表、粗体、引用和续段不会丢失或重复方框',
   assert.equal(pages.reduce((sum,page)=>sum+page.checked.length,0),2);
   const text=pages.map(page=>page.text).join('');
   for(const value of ['OPEN','DONE','continuation','QUOTED','FINISHED'])assert(text.includes(value));
+});
+
+test('引用竖线处在任务框左侧，不穿过方框或勾选标记',async()=>{
+  const [page]=await render('> - [x] QUOTED TASK\n> - [ ] OPEN TASK');
+  const rules=page.paths.filter(path=>path.commands.length===6&&path.bounds[0]===path.bounds[2]&&path.bounds[3]>path.bounds[1]);
+  assert.equal(page.boxes.length,2);assert.equal(rules.length,2);
+  for(const rule of rules)assert(rule.bounds[0]<Math.min(...page.boxes.map(box=>box.bounds[0]))-2);
 });
 
 test('长任务跨页换行时，每项只绘制一个方框，并与首行处在同一页',async()=>{
@@ -114,5 +121,25 @@ test('小数及零行距的多行表格可以导出，单元格文字不丢失',
     const pages=await render('| COL | B |\n|---|---|\n| FIRST '+('wrapped cell content '.repeat(12))+'SECOND THIRD | LAST |',{lineHeight});
     const text=pages.map(page=>page.text).join('');
     for(const value of ['COL','FIRST','SECOND','THIRD','LAST'])assert(text.includes(value));
+  }
+});
+
+test('PDF 将 YAML 排成文章头部，配置字段和正文全部保留，标题大小与字重正常',async()=>{
+  const source='---\ntitle: 计数题\ndescription: 计数题\ndate: 2026-02-27T14:18:15+08:00\nmath: true\nweight: 1\ncategories: [记录（OI与数学）]\ntags: [组合数学]\nauthor: Meze\n---\n\n正文内容。\n\n- [x] 已完成\n- [ ] 待完成';
+  const [page]=await render(source),text=page.text.replace(/\s+/g,'');
+  for(const value of ['计数题计数题','2026-02-27T14:18:15+08:00','math:true','weight:1','分类：记录（OI与数学）','标签：组合数学','author:Meze','正文内容。','已完成','待完成'])assert(text.includes(value),value+': '+text);
+  assert(!text.includes('title:'));assert(!text.includes('---'));
+  const body=page.items.find(item=>item.str==='正文内容。');assert(body);
+  const title=page.items.filter(item=>item.str.trim()&&item.height>body.height*1.8);
+  assert.equal(title.map(item=>item.str).join(''),'计数题');
+  for(const item of title){assert.notEqual(item.fontName,body.fontName);assert(item.transform[5]>body.transform[5]);}
+  assert.equal(page.boxes.length,2);assert.equal(page.checked.length,1);
+});
+
+test('PDF 元信息保留字面实体和额外嵌套字段，纯配置头部也可导出',async()=>{
+  for(const source of ['---\ntitle: "A &amp; B"\ncustom: {level: 2, list: [a, b]}\n---\n\nBODY','---\nmath: true\nweight: 1\n---\n']){
+    const pages=await render(source),text=pages.map(page=>page.text).join('').replace(/\s+/g,'');
+    if(source.includes('BODY')){assert(text.includes('A&amp;B'));assert(text.includes('custom:{level:2,list:[a,b]}'));assert(text.includes('BODY'));}
+    else {assert(text.includes('math:true'));assert(text.includes('weight:1'));}
   }
 });

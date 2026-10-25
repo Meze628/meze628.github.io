@@ -1,5 +1,6 @@
-import { Marked, Renderer, Tokenizer } from 'marked';
+import { Marked, Renderer, Tokenizer, Lexer } from 'marked';
 import {mappedHtml} from './source-map.mjs';
+import {readFrontMatter} from './front-matter.mjs';
 
 export const escapeHtml = text => String(text).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 export function escaped(text, position) {
@@ -128,6 +129,14 @@ export function convertDelimiters(source, direction = 'dollar', includeDisplay =
 
 export function createMarkdown(renderMath) {
   const parser = new Marked({ gfm: true, breaks: false });
+  const lex=(source,options=parser.defaults)=>{
+    const frontMatter=readFrontMatter(source);
+    const tokens=Lexer.lex(frontMatter?source.slice(frontMatter.raw.length):source,options);
+    if(frontMatter)tokens.unshift(frontMatter);
+    return tokens;
+  };
+  // parse() and the explicit lexer()/parser() path share the same prefix logic.
+  parser.lexer=lex;
   const tokenizers={};
   for(const name of ['heading','lheading'])tokenizers[name]=function(source){
     const token=Tokenizer.prototype[name].call(this,source);
@@ -141,8 +150,24 @@ export function createMarkdown(renderMath) {
     return token;
   };
   parser.use({
+    hooks:{provideLexer(block){return block?lex:Lexer.lexInline;}},
     tokenizer:tokenizers,
     extensions: [
+      {
+        name:'frontMatter',childTokens:['tokens'],
+        renderer(token){
+          if(!token.tokens.length)return '';
+          let html='',meta='';
+          for(const field of token.tokens){
+            const text=escapeHtml(field.text);
+            if(field.role==='title')html+=mappedHtml(`<h1 class="md-front-matter-title">${text}</h1>`,field);
+            else if(field.role==='description')html+=mappedHtml(`<p class="md-front-matter-description">${text}</p>`,field);
+            else meta+=mappedHtml(field.role==='date'?`<time datetime="${escapeHtml(token.metadata.date)}">${text}</time>`:`<span>${text}</span>`,field);
+          }
+          if(meta)html+=`<div class="md-front-matter-meta">${meta}</div>`;
+          return mappedHtml(`<header class="md-front-matter">${html}</header>\n`,token);
+        },
+      },
       {
         name: 'mathBlock', level: 'block',
         start: source => source.search(/^(?: {0,3})(?:\$\$|\\\[)/m),

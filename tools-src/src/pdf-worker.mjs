@@ -72,7 +72,7 @@ async function createPdf(job,progress) {
   const monoData=plan.mono?loaded.get(plan.mono.file):null;
   // Register the named font before loading it. Loading the same bytes as the
   // constructor's default prevents PDFKit from caching the Body alias.
-  const doc=new PDFDocument({font:null,autoFirstPage:false,bufferPages:true,compress:true,pdfVersion:'1.7',info:{Title:settings.title||settings.filename,Author:'',Creator:"Meze's Blog · Markdown Tools"}});
+  const doc=new PDFDocument({font:null,autoFirstPage:false,bufferPages:true,compress:true,pdfVersion:'1.7',info:{Title:settings.title||tokens[0]?.metadata?.title||settings.filename,Author:'',Creator:"Meze's Blog · Markdown Tools"}});
   const chunks=[];
   const finished=new Promise((resolve,reject)=>{doc.on('data',chunk=>chunks.push(chunk));doc.on('end',()=>resolve(Buffer.concat(chunks)));doc.on('error',reject);});
   const regularFonts=[],boldFonts=[],fontChoice=new Map();
@@ -165,7 +165,7 @@ async function createPdf(job,progress) {
         case 'checkbox':break;
         case 'text': case 'escape':
           if(token.tokens)units.push(...await inline(token.tokens,style));
-          else units.push(...unitsFromText(decode(token.text).replace(/\s*\n\s*/g,' '),style,token));
+          else units.push(...unitsFromText((token.literal?token.text:decode(token.text)).replace(/\s*\n\s*/g,' '),style,token));
           break;
         case 'strong':units.push(...await inline(token.tokens,{...style,bold:true}));break;
         case 'em':units.push(...await inline(token.tokens,{...style,italic:true}));break;
@@ -222,13 +222,13 @@ async function createPdf(job,progress) {
   function drawFormula(unit,x,y){
     mathModule.drawFormula(doc,unit,x,y,warnings,bodyFace);
   }
-  function drawLine(line,x,y,available,{size=baseSize,code=false,align='left',quote=false,map=true}={}){
+  function drawLine(line,x,y,available,{size=baseSize,code=false,align='left',quote=false,quoteX=x-10,map=true}={}){
     const metrics=lineMetrics(line,size,code);
     if(map){anchor(line.find(unit=>Number.isFinite(unit.sourceStart))?.sourceStart,y);anchor(line.findLast(unit=>Number.isFinite(unit.sourceEnd))?.sourceEnd,y+metrics.advance);}
     const total=line.reduce((sum,unit)=>sum+unit.w,0);
     if(align==='center')x+=(available-total)/2;else if(align==='right')x+=available-total;
     const baseline=y+(metrics.height-metrics.above-metrics.below)/2+metrics.above;
-    if(quote)doc.save().lineWidth(2).strokeColor('#d45d5d').moveTo(x-10,y).lineTo(x-10,y+metrics.height).stroke().restore();
+    if(quote)doc.save().lineWidth(2).strokeColor('#d45d5d').moveTo(quoteX,y).lineTo(quoteX,y+metrics.height).stroke().restore();
     const runs=[];
     for(const unit of line){
       const previous=runs.at(-1);
@@ -265,18 +265,18 @@ async function createPdf(job,progress) {
       .moveTo(boxX+side*.22,boxY+side*.5).lineTo(boxX+side*.43,boxY+side*.7).lineTo(boxX+side*.79,boxY+side*.3).stroke();
     doc.restore();
   }
-  async function paragraph(tokens,{indent=0,prefix='',task=null,size=baseSize,bold=false,quote=false,align='left',after=settings.paragraphGap}={}){
+  async function paragraph(tokens,{indent=0,prefix='',task=null,size=baseSize,bold=false,color,quote=false,align='left',after=settings.paragraphGap}={}){
     const prefixWidth=listMarkerWidth(prefix,task,size);
     const x=left+indent+prefixWidth;
     const available=right-x;
     if(available<size*1.5)throw new Error('可用行宽过小，请减小字号、列表缩进或左右页边距。');
-    const lines=wrap(await inline(tokens,{size,bold}),available);
+    const lines=wrap(await inline(tokens,{size,bold,color}),available);
     for(let index=0;index<lines.length;index++){
       const {height,advance}=lineMetrics(lines[index],size);
       if(height>bottom-top)throw new Error('文字或行内公式过高，请增大纸张或减小字号、行距和页边距。');
       ensure(height);
       if(index===0&&prefixWidth)drawListMarker(prefix,task,left+indent,cursor,size,lines[index]);
-      drawLine(lines[index],x,cursor,available,{size,quote,align});cursor+=index===0&&task!==null?Math.max(advance,size*.88):advance;
+      drawLine(lines[index],x,cursor,available,{size,quote,quoteX:left+indent-10,align});cursor+=index===0&&task!==null?Math.max(advance,size*.88):advance;
     }
     cursor+=after;
   }
@@ -381,6 +381,24 @@ async function createPdf(job,progress) {
       const token=tokens[tokenIndex];
       switch(token.type){
         case 'space':break;
+        case 'frontMatter':{
+          if(!token.tokens.length)break;
+          anchor(token.sourceStart);
+          const meta=[];
+          for(const field of token.tokens){
+            if(field.role==='title'){
+              doc.outline.addItem(field.text);
+              await paragraph(field.tokens,{size:baseSize*1.95*settings.headingScale,bold:true,after:baseSize*.45});
+            }else if(field.role==='description')await paragraph(field.tokens,{color:'#656d78',after:baseSize*.6});
+            else {
+              if(meta.length)meta.push({type:'text',text:'  ·  ',literal:true});
+              meta.push(...field.tokens);
+            }
+          }
+          if(meta.length)await paragraph(meta,{size:baseSize*.8,color:'#7c818a',after:baseSize*.7});
+          ensure(1);doc.save().lineWidth(.5).strokeColor('#d9dce2').moveTo(left,cursor).lineTo(right,cursor).stroke().restore();
+          cursor+=baseSize*.8;anchor(token.sourceEnd);break;
+        }
         case 'heading':{
           const size=baseSize*[1.95,1.55,1.27,1.12,1.04,1][token.depth-1]*settings.headingScale;
           const next=tokens.slice(tokenIndex+1).find(value=>value.type!=='space');

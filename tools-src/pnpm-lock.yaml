@@ -35,6 +35,9 @@ importers:
       svg-to-pdfkit:
         specifier: 0.1.8
         version: 0.1.8
+      yaml:
+        specifier: 2.9.1
+        version: 2.9.1
     devDependencies:
       esbuild:
         specifier: 0.28.2
@@ -418,6 +421,11 @@ packages:
   wicked-good-xpath@1.3.0:
     resolution: {integrity: sha512-Gd9+TUn5nXdwj/hFsPVx5cuHHiF5Bwuc30jZ4+ronF1qHK5O7HD0sgmXWSEgwKquT3ClLoKPVbO6qGwVwLzvAw==}
 
+  yaml@2.9.1:
+    resolution: {integrity: sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
 snapshots:
 
   '@esbuild/aix-ppc64@0.28.2':
@@ -709,3 +717,5 @@ snapshots:
       tiny-inflate: 1.0.3
 
   wicked-good-xpath@1.3.0: {}
+
+  yaml@2.9.1: {}

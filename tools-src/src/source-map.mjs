@@ -5,7 +5,9 @@ export function indexSource(tokens,source) {
       const raw=token.raw??token.text??'';
       let position=raw?source.indexOf(raw,cursor):cursor;
       let finish=position+raw.length;
-      if(position<cursor||finish>end){
+      if(token.sourceRange){
+        [position,finish]=token.sourceRange;
+      }else if(position<cursor||finish>end){
         const lines=raw.split('\n').map(line=>line.replace(/^\s*(?:>\s*)*(?:(?:[-+*]|\d+[.)])\s+)?/,'').trim()).filter(Boolean);
         position=lines.length?source.indexOf(lines[0],cursor):cursor;
         if(position<cursor||position>=end)position=cursor;

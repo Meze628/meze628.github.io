@@ -8,12 +8,16 @@ import {indexSource,sourceAttributes} from './source-map.mjs';
 import {mountScrollSync} from './scroll-sync.mjs';
 import {inspectFont,checkEmbedding} from './font-file.mjs';
 import {readInstalledYahei,createFontCache,restoreCachedYahei} from './system-fonts.mjs';
+import {setTaskChecked} from './task-list.mjs';
 
 const parser = createMarkdown((text, display) => {
   try { return katex.renderToString(text, {displayMode:display, throwOnError:true, trust:false, strict:'ignore', output:'htmlAndMathml', maxExpand:1000}); }
   catch (error) { return `<${display?'div':'span'} class="math-error" title="${escapeHtml(error.message)}">${escapeHtml(text)}</${display?'div':'span'}>`; }
 });
-parser.use({renderer:{code(token) {
+parser.use({renderer:{checkbox(token){
+  const mapped=Number.isInteger(token.sourceStart);
+  return `<input type="checkbox" class="md-task-checkbox" ${mapped?`data-task-start="${token.sourceStart}"`:'disabled'} aria-label="${token.checked?'标记任务为未完成':'标记任务为完成'}"${token.checked?' checked':''}> `;
+},code(token) {
   const {text,lang}=token,language = (lang || '').split(/\s/)[0];
   return `<pre${sourceAttributes(token)}><code class="hljs language-${escapeHtml(language || 'text')}">${highlightCode(text,language)}</code></pre>`;
 }}});
@@ -53,7 +57,7 @@ export function mountTools() {
   let nextJob = 0;
   let activeJob = null;
   let viewerUrl,viewerVersion=0,disposePdfViewer,pdfSourceMap=[],viewerModule;
-  let previousReplacement = null;
+  let previousReplacement = null,markdownSnapshot;
   let fullscreen = false, previousScroll = 0;
   let inertElements = [];
   const status = query('[data-status]');
@@ -84,10 +88,11 @@ export function mountTools() {
       const html = parser.parser(indexSource(parser.lexer(source.value),source.value));
       query('#markdown-preview').innerHTML = DOMPurify.sanitize(html, {USE_PROFILES:{html:true,mathMl:true}, ADD_ATTR:['target'], FORBID_TAGS:['style','script','iframe','object','embed','form']});
       query('#markdown-preview').querySelectorAll('a').forEach(anchor => {anchor.target='_blank';anchor.rel='noopener noreferrer';});
-      query('#markdown-preview').querySelectorAll('input').forEach(input => input.disabled=true);
+      query('#markdown-preview').querySelectorAll('input').forEach(input => input.disabled=!input.matches('.md-task-checkbox[data-task-start]'));
       query('#markdown-preview').querySelectorAll('img').forEach(image => { image.loading='lazy';image.referrerPolicy='no-referrer'; });
       const errors = query('#markdown-preview').querySelectorAll('.math-error').length;
       root.dataset.mathErrors = errors;
+      markdownSnapshot=source.value;
       scrollSync.refresh();
     } catch (error) { notify(`预览失败：${error.message}`,true); }
     markPdfStale(); persist();
@@ -140,6 +145,19 @@ export function mountTools() {
 
   if(!root.dataset.bootstrapped)source.value = typeof saved?.source === 'string' ? saved.source : (kind==='latex' ? LATEX_EXAMPLE : MARKDOWN_EXAMPLE).replaceAll('\\u0060','`');
   on(source,'input',() => handleInput());
+  on(query('#markdown-preview'),'change',event=>{
+    const checkbox=event.target.closest('.md-task-checkbox[data-task-start]');
+    if(!checkbox)return;
+    // A pending source edit can invalidate old checkbox offsets.
+    if(source.value!==markdownSnapshot){handleInput(true);return;}
+    const position=Number(checkbox.dataset.taskStart),next=setTaskChecked(source.value,position,checkbox.checked);
+    if(next===null){handleInput(true);return;}
+    const preview=query('#markdown-preview'),scrollTop=preview.scrollTop,sourceScrollTop=source.scrollTop;
+    source.setRangeText(next[position+1],position+1,position+2,'preserve');
+    handleInput(true);
+    preview.scrollTop=scrollTop;source.scrollTop=sourceScrollTop;
+    preview.querySelector(`[data-task-start="${position}"]`)?.focus({preventScroll:true});
+  });
   on(source,'keydown',event => {
     if (event.key === 'Tab') {
       event.preventDefault();
