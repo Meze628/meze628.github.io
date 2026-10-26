@@ -1016,7 +1016,7 @@ ll binpow(ll a,ll b,ll P){
 		a=a*a%P;
 	}
 	return res;
-}	
+}
 ```
 
 ### GCD
