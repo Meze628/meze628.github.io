@@ -664,6 +664,83 @@ int main(){
 
 ```
 
+
+### 扫描线
+
+[【模板】扫描线 & 矩形面积并](https://www.luogu.com.cn/problem/P5490)
+
+```cpp {class="code-closed"}
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+
+const int N=1e5+5;
+ll n,cnt,len,ans,xn[N<<1];
+struct line{
+	ll h,l,r;
+	ll jud;
+	bool operator<(const line &b) const{
+		return h<b.h;
+	}
+}li[N<<1];
+struct node{
+	ll cnt,len,sum;
+}tr[N<<3];
+map<ll,ll> ind;
+
+void build(ll id,ll s,ll t){
+	if (s==t){
+		tr[id].len=xn[s+1]-xn[s];
+		return ;
+	}
+	ll mid=s+t>>1;
+	build(id<<1,s,mid);
+	build(id<<1|1,mid+1,t);
+	tr[id].len=tr[id<<1].len+tr[id<<1|1].len;
+}
+
+void pushup(ll id,ll s,ll t){
+	if (tr[id].cnt>0) tr[id].sum=tr[id].len;
+	else if (s==t) tr[id].sum=0;
+	else tr[id].sum=tr[id<<1].sum+tr[id<<1|1].sum;	
+}
+
+void update(ll id,ll s,ll t,ll l,ll r,ll c){
+	if (l<=s&&t<=r){
+		tr[id].cnt+=c;
+		pushup(id,s,t);
+		return ;
+	}
+	ll mid=s+t>>1;
+	if (l<=mid) update(id<<1,s,mid,l,r,c);
+	if (r>mid) update(id<<1|1,mid+1,t,l,r,c);
+	pushup(id,s,t);
+}
+
+int main(){
+	scanf("%lld",&n);
+	for (int i=1;i<=n;i++){
+		ll x1,x2,y1,y2;
+		scanf("%lld%lld%lld%lld",&x1,&y1,&x2,&y2);
+		++cnt,li[cnt].l=x1,li[cnt].r=x2,li[cnt].h=y1,li[cnt].jud=1,xn[cnt]=x1;
+		++cnt,li[cnt].l=x1,li[cnt].r=x2,li[cnt].h=y2,li[cnt].jud=-1,xn[cnt]=x2;
+	}
+	sort(xn+1,xn+1+cnt);
+	sort(li+1,li+1+cnt);
+	len=unique(xn+1,xn+1+cnt)-xn-1;
+	for (int i=1;i<=len;i++) ind[xn[i]]=i;
+	for (int i=1;i<=cnt;i++) li[i].l=ind[li[i].l],li[i].r=ind[li[i].r];
+	len--;
+	build(1,1,len);	
+	for (int i=1;i<cnt;i++){
+		update(1,1,len,li[i].l,li[i].r-1,li[i].jud);
+		ans+=tr[1].sum*(li[i+1].h-li[i].h);
+	}
+	printf("%lld\n",ans);
+	return 0;
+}
+```
+
 ### 线段树二分
 
 [CF91B Queue](https://codeforces.com/problemset/problem/91/B)
