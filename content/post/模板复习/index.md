@@ -1005,6 +1005,20 @@ int main(){
 
 ## 数学
 
+### 快速幂
+
+```cpp {class="code-closed"}
+ll binpow(ll a,ll b,ll P){
+	ll res=1;
+	while (b){
+		if (b&1) res=res*a%P;
+		b>>=1;
+		a=a*a%P;
+	}
+	return res;
+}	
+```
+
 ### GCD
 
 ```cpp {class="code-closed"}
