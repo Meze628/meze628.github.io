@@ -549,6 +549,72 @@ int main(){
 }
 ```
 
+### LCA
+
+[【模板】最近公共祖先（LCA）
+](https://www.luogu.com.cn/problem/P3379)
+
+#### 倍增求 LCA
+
+```cpp {class="code-closed"}
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+
+const int N=5e5+5;
+const int K=20;
+ll n,m,s,fa[N][K],dep[N];
+vector<ll> g[N];
+
+void dfs(ll u,ll f){
+	dep[u]=dep[f]+1;
+	fa[u][0]=f;
+	for (ll v:g[u]){
+		if (v==f) continue;
+		dfs(v,u);
+	}
+}
+
+void init(){
+	for (int i=1;i<K;i++){
+		for (int u=1;u<=n;u++){
+			fa[u][i]=fa[fa[u][i-1]][i-1];
+		}
+	}
+}
+
+ll lca(ll u,ll v){
+	if (dep[u]<dep[v]) swap(u,v);
+	for (int i=K-1;i>=0;i--){
+		if (dep[fa[u][i]]>=dep[v]) u=fa[u][i];
+	}
+	if (u==v) return u;
+	for (int i=K-1;i>=0;i--){
+		if (fa[u][i]!=fa[v][i]) u=fa[u][i],v=fa[v][i];
+	}
+	return fa[u][0];
+}
+
+int main(){
+	scanf("%lld%lld%lld",&n,&m,&s);
+	for (int i=1;i<n;i++){
+		ll u,v;
+		scanf("%lld%lld",&u,&v);
+		g[u].push_back(v);
+		g[v].push_back(u);
+	}
+	dfs(s,0);
+	init();
+	while (m--){
+		ll u,v;
+		scanf("%lld%lld",&u,&v);
+		printf("%lld\n",lca(u,v));
+	}
+	return 0;
+}
+
+```
+
 ## 数据结构
 
 ### 线段树
@@ -1071,6 +1137,56 @@ int main(){
 ```
 
 ## 字符串
+
+### 双模哈希
+
+[兔子与兔子](https://www.luogu.com.cn/problem/P10468)
+
+```cpp {class="code-closed"}
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+
+const int N=1e6+5;
+const ll P1=(1ll<<31)-1,P2=(1ll<<31)-19;
+mt19937 rnd(time(0));
+ll n,m,b1,b2,h1[N],h2[N],pw1[N],pw2[N];
+char s[N];
+
+pair<ll,ll> get(ll l,ll r){
+	ll len=r-l+1;
+	ll x=h1[r]-h1[l-1]*pw1[len]%P1;
+	ll y=h2[r]-h2[l-1]*pw2[len]%P2;
+	if (x<0) x+=P1;
+	if (y<0) y+=P2;
+	return {x,y};
+}
+
+bool jud(ll l1,ll r1,ll l2,ll r2){
+	return r1-l1==r2-l2&&get(l1,r1)==get(l2,r2);
+}
+
+int main(){
+	scanf("%s",s+1);
+	n=strlen(s+1);
+	b1=rnd()%(P1-257)+256,b2=rnd()%(P2-257)+256;
+	pw1[0]=pw2[0]=1;
+	for (int i=1;i<=n;i++){
+		h1[i]=(h1[i-1]*b1+s[i])%P1;
+		h2[i]=(h2[i-1]*b2+s[i])%P2;
+		pw1[i]=pw1[i-1]*b1%P1;
+		pw2[i]=pw2[i-1]*b2%P2;
+	}
+	scanf("%lld",&m);
+	while (m--){
+		ll l1,r1,l2,r2;
+		scanf("%lld%lld%lld%lld",&l1,&r1,&l2,&r2);
+		if (jud(l1,r1,l2,r2)) puts("Yes");
+		else puts("No");
+	}
+	return 0;
+}
+```
 
 ## 其他
 
