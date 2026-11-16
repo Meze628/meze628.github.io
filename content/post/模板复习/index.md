@@ -311,6 +311,239 @@ int main(){
 }
 ```
 
+### 割点、点双连通分量
+
+#### 割点判定
+
+[【模板】割点](https://www.luogu.com.cn/problem/P3388)
+
+```cpp {class="code-closed"}
+#include <bits/stdc++.h>
+using namespace std;
+
+typedef long long ll;
+const int N=2e4+5;
+ll n,m;
+ll vis[N],dfn[N],low[N],cnt,res,flag[N];
+vector<ll> g[N];
+
+void tarjan(ll u,ll fa){
+    dfn[u]=low[u]=++cnt;
+    ll cnts=0;
+    for (ll v:g[u]) {
+        if (!dfn[v]){
+            cnts++;
+            tarjan(v,u);
+            low[u]=min(low[u],low[v]);
+            if (u!=fa&&low[v]>=dfn[u]&&!flag[u]) flag[u]=1,res++;
+        }
+        else if (v!=fa) low[u]=min(low[u],dfn[v]);
+    }
+    if (fa==u&&cnts>=2){
+        flag[u]=1;
+        res++;
+    }
+}
+
+int main() {
+    scanf("%lld%lld",&n,&m);
+    for (int i=1;i<=m;i++){
+        ll u,v;
+        scanf("%lld%lld",&u,&v);
+        g[u].push_back(v);
+        g[v].push_back(u);
+    }
+    for (int i=1;i<=n;i++){
+        if (!dfn[i]) tarjan(i,i);
+    }
+    printf("%lld\n",res);
+    for (ll i=1;i<=n;i++){
+        if (flag[i]) printf("%lld ",i);
+    }
+    return 0;
+}
+```
+
+#### 点双连通分量
+
+[【模板】点双连通分量](https://www.luogu.com.cn/problem/P8435)
+
+```cpp {class="code-closed"}
+#include <bits/stdc++.h>
+using namespace std;
+
+typedef long long ll;
+const int N=5e5+5,M=2e6+5;
+ll n,m;
+ll dfn[N],low[N],cnts,cnt,res;
+stack<ll> s;
+vector<ll> g[N],ans[N];
+
+void tarjan(ll u,ll p){
+    dfn[u]=low[u]=++cnt;
+    s.push(u);
+    if (g[u].empty()){
+        ans[++res].push_back(u);
+        return ;
+    }
+    for (ll v:g[u]){
+        if (!dfn[v]){
+            tarjan(v,u);
+            low[u]=min(low[u],low[v]);
+            if (low[v]>=dfn[u]){
+                ++res;
+                ll x;
+                do{
+                    x=s.top();
+                    s.pop();
+                    ans[res].push_back(x);
+                }while (x!=v);
+                ans[res].push_back(u);
+            }
+        }
+        else if (v!=p) low[u]=min(low[u],dfn[v]);
+    }
+}
+
+int main() {
+    scanf("%lld%lld",&n,&m);
+    for (int i=1;i<=m;i++){
+        ll u,v;
+        scanf("%lld%lld",&u,&v);
+        if (u==v) continue;
+        g[u].push_back(v);
+        g[v].push_back(u);
+    }
+    for (int i=1;i<=n;i++){
+        if (!dfn[i]){
+            while (!s.empty()) s.pop();
+            tarjan(i,i);
+        }
+    }
+    printf("%lld\n",res);
+    for (int i=1;i<=res;i++){
+        printf("%lld ",ans[i].size());
+        for (ll v:ans[i]) printf("%lld ",v);
+        putchar('\n');
+    }
+    return 0;
+}
+```
+
+### 桥、边双连通分量
+
+#### 桥的判断（割边）
+
+[【模板】割边](https://www.luogu.com.cn/problem/U582665)
+
+虽然题目里没有重边，但是代码里考虑重边。
+
+```cpp {class="code-closed"}
+#include <bits/stdc++.h>
+using namespace std;
+
+typedef long long ll;
+const int N=5e5+5,M=2e6+5;
+ll n,m,dfn[N],low[N],cnt,res,flag[M];
+vector<pair<ll,ll>> g[N];
+
+void tarjan(ll u,ll p){
+    dfn[u]=low[u]=++cnt;
+    for (auto e:g[u]){
+        ll v=e.first,id=e.second;
+        if (!dfn[v]){
+            tarjan(v,id);
+            low[u]=min(low[u],low[v]);
+            if (low[v]>dfn[u]) flag[id]=1,res++;
+        }
+        else if (id!=p) low[u]=min(low[u],dfn[v]);
+    }
+}
+
+int main(){
+    scanf("%lld%lld",&n,&m);
+    for (int i=1;i<=m;i++){
+        ll u,v;
+        scanf("%lld%lld",&u,&v);
+        g[u].push_back({v,i});
+        g[v].push_back({u,i});
+    }
+    for (int i=1;i<=n;i++){
+        if (!dfn[i]) tarjan(i,0);
+    }
+    printf("%lld\n",res);
+    for (int i=1;i<=m;i++){
+        if (flag[i]) printf("%d ",i);
+    }
+    printf("\n");
+    return 0;
+}
+```
+
+#### 边双连通分量
+
+[【模板】边双连通分量](https://www.luogu.com.cn/problem/P8436)
+
+```cpp {class="code-closed"}
+#include <bits/stdc++.h>
+using namespace std;
+
+typedef long long ll;
+const int N=5e5+5,M=2e6+5;
+ll n,m;
+ll dfn[N],low[N],cnt,res,flag[M],vis[N];
+vector<pair<ll,ll>> g[N];
+vector<ll> ans[N];
+
+void tarjan(ll u,ll p){
+    dfn[u]=low[u]=++cnt;
+    for (auto ed:g[u]){
+        ll v=ed.first,id=ed.second;
+        if (!dfn[v]){
+            tarjan(v,id);
+            low[u]=min(low[u],low[v]);
+            if (low[v]>dfn[u]) flag[id]=1;
+        }
+        else if (id!=p) low[u]=min(low[u],dfn[v]);
+    }
+}
+
+void dfs(ll u){
+    vis[u]=1;
+    ans[res].push_back(u);
+    for (auto ed:g[u]){
+        ll v=ed.first,id=ed.second;
+        if (vis[v]||flag[id]) continue;
+        dfs(v);
+    }
+}
+
+int main() {
+    scanf("%lld%lld",&n,&m);
+    for (ll i=1,u,v;i<=m;i++){
+        scanf("%lld%lld",&u,&v);
+        g[u].push_back({v,i});
+        g[v].push_back({u,i});
+    }
+    for (int i=1;i<=n;i++){
+        if (!dfn[i]) tarjan(i,0);
+    }
+    for (int i=1;i<=n;i++){
+        if (!vis[i]){
+            res++;
+            dfs(i);
+        }
+    }
+    printf("%lld\n",res);
+    for (int i=1;i<=res;i++){
+        printf("%lld ",ans[i].size());
+        for (ll v:ans[i]) printf("%lld ",v);
+        putchar('\n');
+    }
+    return 0;
+}
+```
+
 ### 二分图
 
 #### 二分图判断
@@ -400,9 +633,7 @@ int main(){
 }
 ```
 
-### 桥、边双连通分量
 
-### 割点、点双连通分量
 
 ### 网络流
 
