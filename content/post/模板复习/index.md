@@ -544,6 +544,59 @@ int main() {
 }
 ```
 
+### 欧拉路径
+
+[【模板】欧拉路径](https://www.luogu.com.cn/problem/P7771)
+
+```cpp {class="code-closed"}
+#include<bits/stdc++.h>
+using namespace std;
+
+typedef long long ll;
+const int N=1e5+5;
+ll n,m,s,t;
+ll out[N],in[N];
+vector<ll> g[N];
+stack<ll> ans;
+
+void dfs(ll u){
+    while (!g[u].empty()){
+        ll v=g[u].back();
+        g[u].pop_back();
+        dfs(v);
+    }
+    ans.push(u);
+}
+
+int main(){
+    scanf("%lld%lld",&n,&m);
+    for (int i=1;i<=m;i++){
+        ll u,v;
+        scanf("%lld%lld",&u,&v);
+        g[u].push_back(v);
+        out[u]++,in[v]++;
+    }
+    for (ll u=1;u<=n;u++) sort(g[u].begin(),g[u].end(),greater<ll>() );
+    for (int i=1;i<=n;i++){
+        if (out[i]-in[i]==1) s=i;
+        if (in[i]-out[i]==1) t=i;
+    }
+    for (int i=1;i<=n;i++){
+        if (out[i]!=in[i]&&i!=t&&i!=s) {
+            puts("No");
+            return 0;
+        }
+    }
+    if (s==0) dfs(1);
+    else dfs(s);
+    while (!ans.empty()){
+        printf("%lld ",ans.top());
+        ans.pop();
+    }
+    return 0;
+}
+```
+
 ### 二分图
 
 #### 二分图判断
