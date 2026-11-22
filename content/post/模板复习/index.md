@@ -835,8 +835,7 @@ int main(){
 
 ### LCA
 
-[【模板】最近公共祖先（LCA）
-](https://www.luogu.com.cn/problem/P3379)
+[【模板】最近公共祖先（LCA）](https://www.luogu.com.cn/problem/P3379)
 
 #### 倍增求 LCA
 
@@ -897,6 +896,126 @@ int main(){
     return 0;
 }
 
+```
+
+#### 树链剖分求 LCA
+
+```cpp {class="code-closed"}
+#include<cstdio>
+#include<vector>
+using namespace std;
+
+typedef long long ll;
+const int N=5e5+5;
+ll n,q,s;
+ll dep[N],anc[N][20],fa[N],dfn[N],son[N],top[N],siz[N],cnt;
+vector<ll> g[N];
+
+void dfs1(ll u,ll p){
+    siz[u]=1;
+    fa[u]=p;
+    dep[u]=dep[p]+1;
+    for (ll v:g[u]){
+        if (v==p) continue;
+        dfs1(v,u);
+        siz[u]+=siz[v];
+        if (siz[v]>siz[son[u]]) son[u]=v;
+    }
+}
+
+void dfs2(ll u,ll t){
+    dfn[u]=++cnt;
+    top[u]=t;
+    if (son[u]) {
+        dfs2(son[u],t);
+        for (ll v:g[u]){
+            if (v==fa[u]||v==son[u]) continue;
+            dfs2(v,v);
+        }
+    }
+}
+
+ll LCA(ll u,ll v){
+    while (top[u]!=top[v]){
+        if (dep[top[u]]<dep[top[v]]) swap(u,v);
+        u=fa[top[u]];
+    }
+    if (dfn[u]>=dfn[v]) return v;
+    else return u;
+}
+
+int main(){
+    scanf("%lld%lld%lld",&n,&q,&s);
+    for (int i=1;i<n;i++) {
+        ll u,v;
+        scanf("%lld%lld",&u,&v);
+        g[u].push_back(v);
+        g[v].push_back(u);
+    }
+    dfs1(s,0);
+    dfs2(s,s);
+    while (q--){
+        ll u,v;
+        scanf("%lld%lld",&u,&v);
+        printf("%lld\n",LCA(u,v));
+    }
+    return 0;
+}
+
+```
+
+### 拓扑排序
+
+[最长路](https://www.luogu.com.cn/problem/P1807)
+
+```cpp {class="code-closed"}
+#include <bits/stdc++.h>
+using namespace std;
+
+typedef long long ll;
+const int N=1505;
+ll n,m;
+ll in[N],dp[N];
+struct node{
+    ll v,w;
+};
+vector<node> g[N];
+queue<ll> q;
+vector<ll> l;
+
+int main(){
+    scanf("%lld%lld",&n,&m);
+    for (int i=1;i<=m;i++){
+        ll u,v,w;
+        scanf("%lld%lld%lld",&u,&v,&w);
+        g[u].push_back((node){v,w});
+        in[v]++;
+    }
+    for (int i=1;i<=n;i++){
+        if (!in[i]) q.push(i);
+    }
+    while (!q.empty()){
+        ll u=q.front();
+        q.pop();
+        l.push_back(u);
+        for (node ed:g[u]){
+            ll v=ed.v;
+            if (!(--in[v])) q.push(v);
+        }
+    }
+    for (int i=1;i<=n;i++) dp[i]=-1e14;
+    dp[1]=0;
+    for (ll u:l){
+        if (dp[u]==-1e14) continue;
+        for (node ed:g[u]){
+            ll v=ed.v,w=ed.w;
+            if (dp[v]<dp[u]+w) dp[v]=dp[u]+w;
+        }
+    }
+    if (dp[n]==-1e14) puts("-1");
+    else printf("%lld\n",dp[n]);
+    return 0;
+}
 ```
 
 ## 数据结构
@@ -1353,6 +1472,38 @@ int main(){
 }
 ```
 
+### 笛卡尔树
+
+[【模板】笛卡尔树](https://www.luogu.com.cn/problem/P5854)
+
+```cpp {class="code-closed"}
+#include <bits/stdc++.h>
+using namespace std;
+
+typedef long long ll;
+const int N=1e7+5;
+ll n,a[N],l[N],r[N],ans1,ans2;
+stack<ll> s;
+
+int main(){
+    scanf("%lld",&n);
+    for (int i=1;i<=n;i++) {
+        scanf("%lld",&a[i]);
+        ll k=0;
+        while (!s.empty()&&a[s.top()]>a[i]){
+            k=s.top();
+            s.pop();
+        }
+        l[i]=k;
+        if (!s.empty()) r[s.top()]=i;
+        s.push(i);
+    }
+    for (int i=1;i<=n;i++) ans1^=i*(l[i]+1),ans2^=i*(r[i]+1);
+    printf("%lld %lld\n",ans1,ans2);
+    return 0;
+}
+```
+
 ## 数学
 
 ### 快速幂
@@ -1493,5 +1644,273 @@ while (l<r){
     ll mid=l+r+1>>1;
     if (check(mid)) l=mid
     else r=mid-1;
+}
+```
+
+### 高维前缀和
+
+### 压位高精度
+
+[A+B A-B A*B A/B A%B Problem](https://www.luogu.com.cn/problem/P1932)
+
+```cpp {class="code-closed"}
+#include<cstdio>
+#include<cstring>
+#include<algorithm>
+using namespace std;
+
+typedef long long ll;
+static const int N=1e4+5;
+
+struct BN{
+    static const int BIT=9;
+    static const int P=1e9;
+    ll a[N],sgn;    // a[0] is the length of a, sgn is the sign of the number
+
+    //init
+    BN(){
+        memset(a,0,sizeof(a));
+        a[0]=sgn=1;
+    }
+    void init(){
+        memset(a,0,sizeof(a));
+        a[0]=sgn=1;
+    }
+
+    //IO
+    void read(){
+        char s[N];
+        scanf("%s",s);
+        if (s[0]=='-'){
+            sgn=-1;
+            for (int i=0;s[i];i++) s[i]=s[i+1];
+        }
+        *this=s;
+    }
+    void write(){
+        if(sgn==-1) putchar('-');
+        printf("%lld",a[a[0]]);
+        for(int i=a[0]-1;i>=1;i--) printf("%09lld",a[i]);
+    }
+
+    //assign
+    BN operator=(const char *num){
+        ll l=strlen(num);
+        a[0]=0;
+        for (int i=l-1;i>=0;i-=BIT){
+            a[0]++;
+            ll w=1;
+            for (int j=i;j>=i-BIT+1&&j>=0;j--){
+                a[a[0]]+=w*(num[j]-'0');
+                w=(w<<3)+(w<<1);
+            }
+        }
+        return *this;
+    }
+    BN operator=(const ll num){
+        char a[N];
+        sprintf(a,"%lld",num);
+        *this=a;
+        return *this;
+    }
+    BN (ll num) {*this=num;}
+    BN (const char *num) {*this=num;}
+
+    //abs
+    BN abs() const{
+        BN c=*this;
+        c.sgn=1;
+        return c;
+    }
+
+    //compare
+    bool operator==(const BN &b) {
+        if (sgn!=b.sgn) return false;
+        if (a[0]!=b.a[0]) return false;
+        for(int i=1;i<=a[0];i++) if(a[i]!=b.a[i]) return false;
+        return true;
+    }
+    bool operator!=(const BN &b) {return !(*this==b);}
+    bool operator<(const BN &b) {
+        if (sgn!=b.sgn) return sgn<b.sgn;
+        if (a[0]!=b.a[0]) return a[0]<b.a[0];
+        for(int i=a[0];i>=1;i--){
+            if(a[i]!=b.a[i]) return a[i]<b.a[i];
+        }
+        return false;
+    }
+    bool operator>(const BN &b) {
+        if (sgn!=b.sgn) return sgn>b.sgn;
+        if (a[0]!=b.a[0]) return a[0]>b.a[0];
+        for(int i=a[0];i>=1;i--){
+            if(a[i]!=b.a[i]) return a[i]>b.a[i];
+        }
+        return false;
+    }
+    bool operator<=(const BN &b) {return *this<b||*this==b;}
+    bool operator>=(const BN &b) {return *this>b||*this==b;}
+
+    //clac
+    BN operator+(const BN &b) const{
+        if (sgn!=b.sgn) return *this-(-b);
+        BN c;
+        c.a[0]=max(a[0],b.a[0])+1;
+        c.sgn=sgn;
+        for (int i=1;i<=c.a[0];i++){
+            c.a[i]+=a[i]+b.a[i];
+            if (c.a[i]>=P){
+                c.a[i+1]+=c.a[i]/P;
+                c.a[i]%=P;
+            }
+        }
+        while (c.a[c.a[0]]==0&&c.a[0]>1) c.a[0]--;
+        if (c.a[0]==1&&c.a[1]==0) c.sgn=1;
+        return c;
+    }
+    BN operator+=(const BN &b) {
+        *this=*this + b;
+        return *this;
+    }
+    BN operator-() const{
+        BN c=*this;
+        c.sgn*=-1;
+        return c;
+    }
+    BN operator-(const BN &b) const{
+        if (sgn!=b.sgn) return *this+(-b);
+        if (abs()<b.abs()) return -(b-(*this));
+        BN c;
+        c.a[0]=max(a[0],b.a[0]);
+        c.sgn=sgn;
+        for (int i=1;i<=c.a[0];i++){
+            c.a[i]+=a[i]-b.a[i];
+            if (c.a[i]<0){
+                c.a[i]+=P;
+                c.a[i+1]--;
+            }
+        }
+        while (c.a[c.a[0]]==0&&c.a[0]>1) c.a[0]--;
+        if (c.a[0]==1&&c.a[1]==0) c.sgn=1;
+        return c;
+    }
+    BN operator-=(const BN &b) {
+        *this=*this - b;
+        return *this;
+    }
+    BN operator*(const BN &b){
+        BN c;
+        c.a[0]=a[0]+b.a[0];
+        c.sgn=sgn*b.sgn;
+        for (int i=1;i<=a[0];i++){
+            for (int j=1;j<=b.a[0];j++){
+                c.a[i+j-1]+=a[i]*b.a[j];
+                if (c.a[i+j-1]>=P){
+                    c.a[i+j]+=c.a[i+j-1]/P;
+                    c.a[i+j-1]%=P;
+                }
+            }
+        }
+        while (c.a[c.a[0]]==0&&c.a[0]>1) c.a[0]--;
+        if (c.a[0]==1&&c.a[1]==0) c.sgn=1;
+        return c;
+    }
+    BN operator*=(const BN &b) {
+        *this=*this * b;
+        return *this;
+    }
+    BN operator<<(const int &b) {
+        a[0]++;
+        for (int i=1;i<=a[0];i++){
+            a[i]<<=b;
+            if (a[i-1]>=P) {
+                a[i-1]-=P;
+                a[i]++;
+            }
+        }
+        while (a[a[0]]==0&&a[0]>1) a[0]--;
+        return *this;
+    }
+    BN operator<<=(const int &b) {
+        *this=*this<<b;
+        return *this;
+    }
+    BN operator>>(const int &b){
+        for (int i=a[0];i>=1;i--){
+            if ((a[i]&1)&&(i>1)) a[i-1]+=P;
+            a[i]>>=b;
+        }
+        while (a[a[0]]==0&&a[0]>1) a[0]--;
+        if (a[0]==1&&a[1]==0) sgn=1;
+        return *this;
+    }
+    BN operator>>=(const int &b) {
+        *this=*this>>b;
+        return *this;
+    }
+    BN operator/(const BN &b) const{
+        BN c=abs(),k=b.abs();
+        BN t,lt;
+        t.a[1]=1;
+        while (c>=k) k<<=1,t<<=1;
+        while (t.a[0]>1||t.a[1]){
+            if (c>=k) c-=k,lt+=t;
+            k>>=1,t>>=1;
+        }
+        c=lt;
+        c.sgn=sgn*b.sgn;
+        while (c.a[c.a[0]]==0&&c.a[0]>1) c.a[0]--;
+        if (c.a[0]==1&&c.a[1]==0) c.sgn=1;
+        return c;
+    }
+    BN operator/=(const BN &b) {
+        *this=*this/b;
+        return *this;
+    }
+    BN operator%(const BN &b) const{
+        BN c=*this/b;
+        return *this-c*b;
+    }
+    BN operator%=(const BN &b) {
+        *this=*this%b;
+        return *this;
+    }
+};
+
+int main(){
+    BN a,b,c;
+    a.read();
+    b.read();
+
+    //add test
+    c=a+b;
+    printf("a+b=");
+    c.write();
+    puts("");
+
+    // sub test
+    c=a-b;
+    printf("a-b=");
+    c.write();
+    puts("");
+
+    // mul test
+    c=a*b;
+    printf("a*b=");
+    c.write();
+    puts("");
+
+    // div test
+    c=a/b;
+    printf("a/b=");
+    c.write();
+    puts("");
+
+    // mod test
+    c=a%b;
+    printf("a%%b=");
+    c.write();
+    puts("");
+
+    return 0;
 }
 ```
