@@ -1020,6 +1020,79 @@ int main(){
 
 ## 数据结构
 
+### 单调队列
+
+[【模板】单调队列 / 滑动窗口](https://www.luogu.com.cn/problem/P1886)
+
+```cpp {class="code-closed"}
+#include<bits/stdc++.h>
+using namespace std;
+#define u first
+#define v second
+
+typedef long long ll;
+typedef pair<ll,ll> PLL;
+const int N=1e6+5;
+
+ll n,k;
+ll res1[N],res2[N];
+deque<PLL> m1,m2;
+
+int main(){
+    scanf("%lld%lld",&n,&k);
+    for (int i=1;i<=n;i++){
+        ll x;
+        scanf("%lld",&x);
+        PLL t;
+        t.u=i,t.v=x;
+        while ((!m1.empty())&&m1.back().v>=x) m1.pop_back();
+        while ((!m2.empty())&&m2.back().v<=x) m2.pop_back();
+        m1.push_back(t);
+        m2.push_back(t);
+        while ((!m1.empty())&&m1.front().u<i-k+1) m1.pop_front();
+        while ((!m2.empty())&&m2.front().u<i-k+1) m2.pop_front();
+        if (i-k>=0) {
+            res1[i-k+1]=m1.front().v;
+            res2[i-k+1]=m2.front().v;
+        }
+    }
+    for (int i=1;i<=n-k+1;i++) printf("%lld ",res1[i]);
+    putchar('\n');
+    for (int i=1;i<=n-k+1;i++) printf("%lld ",res2[i]);
+}
+```
+
+### 单调栈
+
+[【模板】单调栈](https://www.luogu.com.cn/problem/P5788)
+
+```cpp {class="code-closed"}
+#include<cstdio>
+#include<stack>
+using namespace std;
+
+typedef long long ll;
+const int N=3e6+5;
+ll n,a[N],f[N];
+struct node{
+    ll n,i;
+};
+stack<node> s;
+
+int main(){
+    scanf("%lld",&n);
+    for (int i=1;i<=n;i++) scanf("%lld",&a[i]);
+    for (int i=n;i>=1;i--){
+        while (!s.empty()&&s.top().n<=a[i]) s.pop();
+        if (s.empty()) f[i]=0;
+        else f[i]=s.top().i;
+        s.push((node){a[i],i});
+    }
+    for (int i=1;i<=n;i++) printf("%lld ",f[i]);
+    return 0;
+}
+```
+
 ### 线段树
 
 [P3373 【模板】线段树 2](https://www.luogu.com.cn/problem/P3373)
