@@ -1580,15 +1580,16 @@ int main(){
 ```cpp {class="code-closed"}
 #include <bits/stdc++.h>
 using namespace std;
-typedef long long ll;
 
+typedef long long ll;
+typedef pair<ll,ll> PLL;
 const int N=1e6+5;
 const ll P1=(1ll<<31)-1,P2=(1ll<<31)-19;
 mt19937 rnd(time(0));
 ll n,m,b1,b2,h1[N],h2[N],pw1[N],pw2[N];
 char s[N];
 
-pair<ll,ll> get(ll l,ll r){
+PLL get(ll l,ll r){
     ll len=r-l+1;
     ll x=h1[r]-h1[l-1]*pw1[len]%P1;
     ll y=h2[r]-h2[l-1]*pw2[len]%P2;
