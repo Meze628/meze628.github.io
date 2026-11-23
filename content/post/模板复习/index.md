@@ -1650,6 +1650,15 @@ while (l<r){
 
 ### 高维前缀和
 
+```cpp {class="code-closed"}
+ll tot=1<<n;
+for (ll i=0;i<n;i++) {
+    for (ll mask=0;mask<tot;mask++) {
+        if (mask&(1<<i)) f[mask]+=f[mask^(1<<i)];
+    }
+}
+```
+
 ### 压位高精度
 
 [A+B A-B A*B A/B A%B Problem](https://www.luogu.com.cn/problem/P1932)
