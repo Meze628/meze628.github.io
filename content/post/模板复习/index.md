@@ -1646,6 +1646,204 @@ int main(){
 
 ## 字符串
 
+### KMP
+
+[【模板】KMP](https://www.luogu.com.cn/problem/P3375)
+
+```cpp {class="code-closed"}
+#include<cstdio>
+using namespace std;
+
+const int N=1e6+5;
+char s[N],t[N];
+int pi[N];
+
+int main(){
+    scanf("%s",s+1);
+    scanf("%s",t+1);
+    for (int i=2,j=0;t[i];i++){
+        while (j&&t[j+1]!=t[i]) j=pi[j];
+        if (t[j+1]==t[i]) pi[i]=++j;
+    }
+    for (int i=1,j=0;s[i];i++){
+        while (j&&t[j+1]!=s[i]) j=pi[j];
+        if (t[j+1]==s[i]) j++;
+        if (t[j+1]=='\0'){
+            printf("%d\n",i-j+1);
+            j=pi[j];
+        }
+    }
+    for (int i=1;t[i];i++) printf("%d ",pi[i]);
+}
+```
+
+### 扩展 KMP（Z 函数）
+
+[【模板】扩展 KMP / exKMP（Z 函数）](https://www.luogu.com.cn/problem/P5410)
+
+```cpp {class="code-closed"}
+#include<cstdio>
+#include<algorithm>
+#include<cstring>
+using namespace std;
+
+typedef long long ll;
+const int N=2e7+5;
+char a[N],b[N];
+ll n,m,z[N],p[N];
+ll ans1,ans2;
+
+int main(){
+    scanf("%s",a+1);
+    scanf("%s",b+1);
+    n=strlen(a+1);
+    m=strlen(b+1);
+    z[1]=m;
+    for (int i=2,l=1,r=1;i<=m;i++){
+        if (i<=r) z[i]=min((ll)r-i+1,z[i-l+1]);
+        while (i+z[i]<=m&&b[z[i]+1]==b[i+z[i]]) ++z[i];
+        if (i+z[i]-1>r) l=i,r=i+z[i]-1;
+    }
+    for (int i=1,l=0,r=0;i<=n;i++){
+        if (i<=r) p[i]=min((ll)r-i+1,z[i-l+1]);
+        while (i+p[i]<=n&&b[p[i]+1]==a[i+p[i]]) ++p[i];
+        if (i+p[i]-1>r) l=i,r=i+p[i]-1;
+    }
+    ans1=z[1]+1,ans2=p[1]+1;
+    for (int i=2;i<=m;i++) ans1^=i*(z[i]+1);
+    for (int i=2;i<=n;i++) ans2^=i*(p[i]+1);
+    printf("%lld\n%lld",ans1,ans2);
+}
+```
+
+### Manacher
+
+[【模板】Manacher](https://www.luogu.com.cn/problem/P3805)
+
+```cpp {class="code-closed"}
+#include<cstdio>
+#include<algorithm>
+using namespace std;
+
+typedef long long ll;
+const int N=1.1e7+5;
+char s[N<<1];
+ll n,d[N<<1],cnt,ans;
+
+int main(){
+    s[0]='#';
+    char c=getchar();
+    while (c>='a'&&c<='z'){
+        s[++cnt]=c;
+        s[++cnt]='#';
+        c=getchar();
+    }
+    for (int i=0,l=0,r=-1;s[i];i++){
+        ll k;
+        if (i>r) k=1;
+        else k=min(d[l+r-i],(ll)r-i+1);
+        while (i>=k&&i+k<=cnt&&s[i-k]==s[i+k]) k++;
+        d[i]=k--;
+        if (i+k>r) l=i-k,r=i+k;
+    }
+    for (int i=0;i<=cnt;i++){
+        if (i&1) d[i]>>=1,ans=max(ans,d[i]*2-1);
+        else  d[i]>>=1,ans=max(ans,d[i]*2);
+    }
+    printf("%lld\n",ans);
+    return 0;
+}
+```
+
+### AC 自动机
+
+[【模板】AC 自动机](https://www.luogu.com.cn/problem/P5357)
+
+```cpp {class="code-closed"}
+#include<cstdio>
+#include<cstring>
+#include<queue>
+using namespace std;
+
+typedef long long ll;
+const int T=2e5+5;
+const int N=2e6+5;
+ll n,ans,cnt=1;
+char s[N];
+ll tr[N][30],tag[N],ind[N],fail[N];
+ll in[N],res[N],vis[N];
+
+void insert(char t[],ll id){
+    ll u=1;
+    for (int i=1;t[i];i++){
+        ll c=t[i]-'a';
+        if (!tr[u][c]) tr[u][c]=++cnt;
+        u=tr[u][c];
+    }
+    if (!tag[u]) tag[u]=id;
+    ind[id]=tag[u];
+}
+
+void build_fail(){
+    for (int i=0;i<26;i++) tr[0][i]=1;
+    queue<ll> q;
+    q.push(1);
+    while (!q.empty()){
+        ll u=q.front();
+        q.pop();
+        ll fafail=fail[u];
+        for (int i=0;i<26;i++){
+            ll c=tr[u][i];
+            if (!c){
+                tr[u][i]=tr[fafail][i];
+                continue;
+            }
+            fail[c]=tr[fafail][i];
+            in[fail[c]]++;
+            q.push(c);
+        }
+    }
+}
+
+void query(){
+    ll u=1;
+    for (int i=1;s[i];i++){
+        ll c=s[i]-'a';
+        u=tr[u][c];
+        res[u]++;
+    }
+}
+
+void topo_sort(){
+    queue<ll> q;
+    for (int i=1;i<=cnt;i++){
+        if (!in[i]) q.push(i);
+    }
+    while (!q.empty()){
+        ll u=q.front();
+        q.pop();
+        vis[tag[u]]=res[u];
+        ll v=fail[u];
+        if (!(--in[v])) q.push(v);
+        res[v]+=res[u];
+    }
+}
+
+int main(){
+    scanf("%lld",&n);
+    for (int i=1;i<=n;i++){
+        char t[T];
+        scanf("%s",t+1);
+        insert(t,i);
+    }
+    scanf("%s",s+1);
+    build_fail();
+    query();
+    topo_sort();
+    for (int i=1;i<=n;i++) printf("%lld\n",vis[ind[i]]);
+}
+```
+
 ### 双模哈希
 
 [兔子与兔子](https://www.luogu.com.cn/problem/P10468)
